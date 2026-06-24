@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PesanKeu - KiTa Sales Form</title>
+    <link rel="icon" type="image/png" href="image/LOGO_KITA.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        body {
+            display: block !important; /* Menghancurkan flexbox menyamping di tingkat bodi web */
+            margin: 0;
+            padding: 0;
+            background-color: #f8fafc;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header class="main-header">
+            <div class="logo-area" onclick="aksesAdminViaLogo()" style="display: flex; align-items: center; gap: 15px; cursor: default;">
+                <img src="image/LOGO_KITA.png" alt="Logo KiTa" style="height: auto; max-height: 55px; object-fit: contain;">
+                
+                <div style="display: flex; flex-direction: column; justify-content: center;">
+                    <h1 style="margin: 0; font-size: 26px; font-weight: 700; color: #1e293b; line-height: 1.2;">PesanKeu - KiTa</h1>
+                    <p style="margin: 2px 0 0 0; font-size: 12px; font-weight: 500; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Smart Order & Finance System</p>
+                </div>
+            </div>
+        </header>
+
+        <section class="app-card">
+            <div class="card-title">
+                <i class="fa-solid fa-user-tag text-green"></i>
+                <h2>1. Informasi Pelanggan</h2>
+            </div>
+            <div class="form-group">
+                <label for="namaCustomer">Nama Lengkap</label>
+                <input type="text" id="namaCustomer" placeholder="Masukkan nama Anda...">
+            </div>
+            <div class="form-group">
+                <label for="hpCustomer">Nomor WhatsApp</label>
+                <input type="number" id="hpCustomer" placeholder="Contoh: 08123456789">
+            </div>
+            <div class="form-group" style="margin-top: 15px;">
+                <label for="alamat">Alamat Pengiriman Lengkap</label>
+                <textarea id="alamat" placeholder="Masukkan alamat lengkap pengiriman... (Contoh: Perum Puri Tigaraksa Blok A No. 3)"></textarea>
+            </div>
+        </section>
+
+        <section class="app-card">
+            <div class="card-title">
+                <i class="fa-solid fa-utensils text-amber"></i>
+                <h2>2. Pilih Menu & Variasi</h2>
+            </div>
+            <div class="form-group">
+                <label for="pilihanMenu">Daftar Menu</label>
+                <select id="pilihanMenu" onchange="handleMenuChange()">
+                    <option value="">-- Pilih Menu Terenak --</option>
+                    <option value="LUMPIA BEEF">LUMPIA BEEF (Rp 15.000)</option>
+                    <option value="BANANA ROLL 8">BANANA ROLL - Isi 8 Pcs (Rp 10.000)</option>
+                    <option value="BANANA ROLL 6">BANANA ROLL - Isi 6 Pcs (Rp 7.000)</option>
+                    <option value="BANANA CRISPY 10">BANANA CRISPY - Isi 10 Pcs (Rp 12.000)</option>
+                    <option value="BANANA CRISPY 5">BANANA CRISPY - Isi 5 Pcs (Rp 6.000)</option>
+                </select>
+            </div>
+
+            <div id="wrapperLumpia" class="extra-box" style="display: none;">
+                <div class="form-group">
+                    <label for="levelPedas" style="color: var(--primary-green); font-weight: 600;">
+                        <i class="fa-solid fa-pepper-hot"></i> Pilih Tingkat Pedas:
+                    </label>
+                    <select id="levelPedas">
+                        <option value="Original (Tidak Pedas)">Original (Tidak Pedas)</option>
+                        <option value="Pedas Santai (Lvl 1)">Pedas Santai (Lvl 1)</option>
+                        <option value="Pedas Normal (Lvl 2)">Pedas Normal (Lvl 2)</option>
+                        <option value="Pedas Gila (Lvl 3)">Pedas Gila (Lvl 3)</option>
+                    </select>
+                </div>
+
+                <label class="custom-checkbox" style="margin-top: 15px;">
+                    <input type="checkbox" id="chkExtraTelor">
+                    <span class="checkmark"></span>
+                    Tambah Extra Telor (+Rp 4.000)
+                </label>
+            </div>
+
+            <div id="wrapperBanana" class="extra-box" style="display: none;">
+                <div class="form-group">
+                    <label for="toppingGratis" style="color: var(--amber-gold); font-weight: 600;">
+                        <i class="fa-solid fa-star"></i> Pilih Topping Gratis (Sudah Termasuk):
+                    </label>
+                    <select id="toppingGratis">
+                        <option value="Coklat">Coklat</option>
+                        <option value="Strawberry">Strawberry</option>
+                        <option value="Keju">Keju</option>
+                        <option value="Mix Rasa (Request)">Mix Rasa (Tulis di Catatan Khusus)</option> 
+                    </select>
+                </div>
+
+                <label class="custom-checkbox" style="margin-top: 15px;">
+                    <input type="checkbox" id="chkExtraTopping" onchange="toggleExtraTopping()">
+                    <span class="checkmark"></span>
+                    Mau Tambah Extra Topping? (+Rp 2.000)
+                </label>
+
+                <div id="dropdownTopping" class="form-group sub-dropdown" style="display: none; margin-top: 12px;">
+                    <label for="varianTopping">Pilih Extra Topping Tambahan:</label>
+                    <select id="varianTopping">
+                        <option value="Coklat">Double Coklat</option>
+                        <option value="Strawberry">Double Strawberry</option>
+                        <option value="Keju">Double Keju Parut</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="jumlahPorsi">Jumlah Porsi</label>
+                <input type="number" id="jumlahPorsi" value="1" min="1">
+            </div>
+
+            <button type="button" class="btn btn-secondary" onclick="addItemToCart()">
+                <i class="fa-solid fa-cart-plus"></i> Masukkan Keranjang
+            </button>
+        </section>
+
+        <section class="app-card">
+            <div class="card-title">
+                <i class="fa-solid fa-basket-shopping text-blue"></i>
+                <h2>3. Keranjang Belanjaan</h2>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="cart-table">
+                    <thead>
+                        <tr>
+                            <th>Menu</th>
+                            <th>Kustomisasi</th>
+                            <th>Qty</th>
+                            <th>Subtotal</th>
+                            <th style="text-align: center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cartItemsContainer"></tbody>
+                </table>
+            </div>
+
+            <div class="form-group" style="margin-top: 20px;">
+                <label for="catatanPesanan">Catatan Request Khusus (Opsional)</label>
+                <textarea id="catatanPesanan" placeholder="Contoh: Lumpia beef garing ya, Saus dipisah..."></textarea>
+            </div>
+
+            <div class="invoice-summary">
+                <p>Total Pembayaran:</p>
+                <h3 id="totalPembayaran">Rp 0</h3>
+            </div>
+
+            <button type="button" class="btn btn-primary" onclick="submitCheckout()">
+                <i class="fa-brands fa-whatsapp"></i> Checkout & Proses Pesanan
+            </button>
+        </section>
+    </div> 
+
+    <footer class="main-footer-bottom" style="
+        display: block !important;
+        clear: both !important;
+        width: 100% !important;
+        margin-top: 50px; 
+        border-top: 1px solid #e2e8f0; 
+        padding: 25px 0; 
+        color: #64748b; 
+        font-size: 13px;
+        background-color: #ffffff;
+    ">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; width: 100%;">
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 600; color: #1e293b;">
+                <img src="image/LOGO_KITA.png" alt="KiTa Mini" style="height: 20px; width: auto; object-fit: contain;">
+                <span>KiTa PesanKeu</span>
+                <span style="background: #dcfce7; color: #16a34a; font-size: 10px; padding: 2px 8px; border-radius: 99px; font-weight: 500;">
+                    <i class="fa-solid fa-cloud" style="font-size: 9px; margin-right: 3px;"></i> Connected to Cloud
+                </span>
+            </div>
+
+            <p style="margin: 0;">&copy; 2026 <strong>KiTa PesanKeu</strong>. All Rights Reserved.</p>
+            
+            <p style="margin: 0; font-size: 11px; color: #94a3b8;">
+                Smart Order & Finance System for Employee Program & Local Business &bull; v2.4.0
+            </p>
+        </div>
+    </footer>    
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script src="script.js"></script>
+</body>
+</html>
