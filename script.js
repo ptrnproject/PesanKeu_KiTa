@@ -30,6 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (pilihanMenuElemen) {
         pilihanMenuElemen.addEventListener('change', handleMenuChange);
     }
+
     // Render awal untuk memastikan tampilan kosong yang rapi jika belum ada item
     renderKeranjang();
 });
@@ -53,6 +54,7 @@ function handleMenuChange() {
     if (document.getElementById('chkExtraTelor')) document.getElementById('chkExtraTelor').checked = false;
     if (document.getElementById('levelPedas')) document.getElementById('levelPedas').selectedIndex = 0;
     if (document.getElementById('toppingGratis')) document.getElementById('toppingGratis').selectedIndex = 0;
+    if (document.getElementById('pilihRasa')) document.getElementById('pilihRasa').selectedIndex = 0;
     if (document.getElementById('chkExtraTopping')) document.getElementById('chkExtraTopping').checked = false;
     if (document.getElementById('dropdownTopping')) document.getElementById('dropdownTopping').style.display = 'none';
 
@@ -115,20 +117,26 @@ function addItemToCart() {
     else if (namaMenu.startsWith('BANANA')) {
         if (namaMenu === 'BANANA ROLL 8') { hargaDasar = 10000; namaMenuTampil = "Banana Roll (Isi 8 Pcs)"; } 
         else if (namaMenu === 'BANANA ROLL 6') { hargaDasar = 7000; namaMenuTampil = "Banana Roll (Isi 6 Pcs)"; } 
-        else if (namaMenu === 'BANANA CRISPY 12') { hargaDasar = 12000; namaMenuTampil = "Banana Crispy (Isi 12 Pcs)"; } 
+        else if (namaMenu === 'BANANA CRISPY 10') { hargaDasar = 12000; namaMenuTampil = "Banana Crispy (Isi 10 Pcs)"; } 
         else if (namaMenu === 'BANANA CRISPY 5') { hargaDasar = 6000; namaMenuTampil = "Banana Crispy (Isi 5 Pcs)"; }
 
-        const topGratisElemen = document.getElementById('toppingGratis');
-        const topGratis = topGratisElemen ? topGratisElemen.value : "Original";
-        const extraToppingElemen = document.getElementById('chkExtraTopping');
-        const extraTopping = extraToppingElemen ? extraToppingElemen.checked : false;
+        // 1. Ambil nilai dari input HTML
+        const rasaDipilih = document.getElementById('pilihRasa') ? document.getElementById('pilihRasa').value : "Original";
+        const topGratis = document.getElementById('toppingGratis') ? document.getElementById('toppingGratis').value : "Original";
+        const extraTopping = document.getElementById('chkExtraTopping') ? document.getElementById('chkExtraTopping').checked : false;
+
+        // 2. SUSUN DETAIL KUSTOMISASI (Hanya tulis sekali saja)
+        // Awali dengan Rasa dan Topping Gratis
+        detailKustomisasi = `Rasa: ${rasaDipilih} | Topping: ${topGratis}`;
         
-        detailKustomisasi = `Topping: ${topGratis}`;
+        // 3. Tambahkan Extra hanya jika dicentang
         if (extraTopping) {
             const topTambahanElemen = document.getElementById('varianTopping');
             const topTambahan = topTambahanElemen ? topTambahanElemen.value : "";
             biayaKustomisasi = 2000;
+            // Gunakan += agar teks ini disambung dengan teks sebelumnya, bukan menggantikannya
             detailKustomisasi += ` + Extra Double ${topTambahan}`;
+        
         }
     }
 
