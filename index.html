@@ -75,9 +75,8 @@
                     </label>
                     <select id="levelPedas">
                         <option value="Original (Tidak Pedas)">Original (Tidak Pedas)</option>
-                        <option value="Pedas Santai (Lvl 1)">Pedas Santai (Lvl 1)</option>
-                        <option value="Pedas Normal (Lvl 2)">Pedas Normal (Lvl 2)</option>
-                        <option value="Pedas Gila (Lvl 3)">Pedas Gila (Lvl 3)</option>
+                        <option value="Sedang">Sedang</option>
+                        <option value="Pedas Banget">Pedas Banget</option>
                     </select>
                 </div>
 
@@ -89,32 +88,43 @@
             </div>
 
             <div id="wrapperBanana" class="extra-box" style="display: none;">
+                <div class="form-group" style="margin-top: 12px;">
+                    <label for="pilihRasa" style="color: var(--amber-gold); font-weight: 600;">
+                        <i class="fa-solid fa-star"></i> Pilih Rasa:
+                    </label>
+                    <select id="pilihRasa">
+                        <option value="Coklat">Coklat</option>
+                        <option value="Strawberry">Strawberry</option>
+                        <option value="Tiramisu">Tiramisu</option>
+                        <option value="Mix Rasa">Mix Rasa (Pilih 2 Rasa, cantumkan di catatan)</option>
+                    </select>
+                </div>
+                
                 <div class="form-group">
                     <label for="toppingGratis" style="color: var(--amber-gold); font-weight: 600;">
                         <i class="fa-solid fa-star"></i> Pilih Topping Gratis (Sudah Termasuk):
                     </label>
                     <select id="toppingGratis">
-                        <option value="Coklat">Coklat</option>
-                        <option value="Strawberry">Strawberry</option>
                         <option value="Keju">Keju</option>
-                        <option value="Mix Rasa (Request)">Mix Rasa (Tulis di Catatan Khusus)</option> 
+                        <option value="Oreo">Oreo</option>
+                        <option value="Choco Chips">Choco Chips</option> 
                     </select>
                 </div>
-
-                <label class="custom-checkbox" style="margin-top: 15px;">
-                    <input type="checkbox" id="chkExtraTopping" onchange="toggleExtraTopping()">
-                    <span class="checkmark"></span>
-                    Mau Tambah Extra Topping? (+Rp 2.000)
-                </label>
 
                 <div id="dropdownTopping" class="form-group sub-dropdown" style="display: none; margin-top: 12px;">
                     <label for="varianTopping">Pilih Extra Topping Tambahan:</label>
                     <select id="varianTopping">
-                        <option value="Coklat">Double Coklat</option>
-                        <option value="Strawberry">Double Strawberry</option>
-                        <option value="Keju">Double Keju Parut</option>
+                        <option value="Keju">Double Keju</option>
+                        <option value="Oreo">Double Oreo</option>
+                        <option value="Choco Chips">Double Choco Chips</option>
                     </select>
-                </div>
+                </div>  
+                
+                <label class="custom-checkbox" style="margin-top: 15px;">
+                    <input type="checkbox" id="chkExtraTopping" onchange="toggleExtraTopping()">
+                    <span class="checkmark"></span>
+                    Mau Extra Topping Tambahan? (+Rp 2.000)
+                </label>                              
             </div>
 
             <div class="form-group">
