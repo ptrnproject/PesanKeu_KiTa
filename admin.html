@@ -30,7 +30,25 @@
             --blue: #3498db;
             --danger: #e74c3c;
             --purple: #9b59b6;
+            --btn-proses: #f59e0b;  /* Amber lembut */
+            --btn-selesai: #10b981; /* Emerald/Hijau kalem */
+            --btn-edit: #3b82f6;    /* Biru modern */
+            --btn-wa: #25d366;      /* Warna khas WA (tetap dipertahankan agar familiar) */
+            --btn-hapus: #ef4444;   /* Merah lembut */            
         }
+
+        /* Atur agar sel memiliki ruang dan teks tidak menempel */
+        td {
+            padding: 10px;
+            vertical-align: top;
+            white-space: normal; /* Memastikan teks membungkus ke baris baru */
+        }
+
+        /* Pastikan kolom Rincian Menu Order punya lebar yang cukup */
+        td:nth-child(5) { 
+            min-width: 250px; 
+            line-height: 1.5; /* Memberi jarak antar baris teks */
+        }        
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
         body { background-color: var(--bg-main); color: var(--text-main); padding: 30px 15px; }
@@ -63,11 +81,192 @@
         .btn-pdf:hover { background-color: #930000; }
 
         /* TABEL PESANAN TERPERINCI */
-        .table-responsive { width: 100%; overflow-x: auto; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); }
-        .admin-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
-        .admin-table th { background-color: #f1f5f9; color: var(--text-main); padding: 14px; font-weight: 600; border-bottom: 2px solid var(--border-color); }
-        .admin-table td { padding: 14px; border-bottom: 1px solid var(--border-color); vertical-align: top; color: var(--text-main); }
-        .admin-table tr:hover { background-color: #f8fafc; }
+        .table-responsive { 
+            width: 100%; 
+            overflow-x: auto; 
+            background: var(--bg-card); 
+            border-radius: 8px; 
+            border: 1px solid var(--border-color); 
+        }
+        
+        .admin-table {
+            table-layout: auto; /* Ubah ke auto agar fleksibel mengikuti konten */
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .admin-table td {
+            padding: 15px 10px;
+            border-bottom: 1px solid #e2e8f0;
+            border-right: 1px solid #e2e8f0;
+            
+            /* Tambahkan baris ini untuk memposisikan konten di tengah secara vertikal */
+            vertical-align: middle; 
+        }
+
+        .admin-table td ul {
+            margin: 0;
+            padding-left: 20px; /* Memberi jarak untuk bullet */
+            list-style-type: disc;
+        }
+
+        .admin-table td ul li {
+            word-wrap: break-word; /* Memastikan item menu yang panjang pindah baris */
+        } 
+        
+        .date-container {
+            display: flex;
+            flex-direction: column; /* Ini kunci utamanya: menyusun item secara vertikal */
+            align-items: flex-start;
+            line-height: 1.2;
+        }
+
+        .d-block {
+            display: block;
+        }
+
+        .text-muted {
+            color: #6c757d;
+            font-size: 0.85em; /* Membuat jam terlihat lebih kecil dan rapi */
+        }  
+      
+        /* Memberi ruang lebih lega di setiap sel */
+        .admin-table td {
+            padding: 20px 10px; /* Atas-Bawah 20px, Kiri-Kanan 10px */
+            border-bottom: 2px solid #e2e8f0; /* Garis pemisah yang lebih tebal antar baris */
+        }
+
+        /* Memperbaiki lebar kolom agar tidak saling menekan */
+        .admin-table {
+            table-layout: auto; 
+            width: 100%;
+            border-collapse: collapse;
+        } 
+
+        /* Mengatur Header (Judul Kolom) agar ke tengah */
+        .admin-table thead th {
+            vertical-align: middle !important; /* Tengah vertikal */
+            text-align: center !important;     /* Tengah horizontal */
+            padding: 15px 10px;
+            border-bottom: 3px solid #cbd5e1;
+            border-right: 1px solid #e2e8f0;
+        }
+
+        /* Mengatur Isi Tabel agar ke tengah */
+        .admin-table td {
+            vertical-align: middle;            /* Tengah vertikal */
+            text-align: center;                /* Tengah horizontal */
+            padding: 15px 10px;
+            border-bottom: 1px solid #e2e8f0;
+            border-right: 1px solid #e2e8f0;
+        }
+
+        /* KHUSUS: Rincian Menu agar tetap rata kiri agar mudah dibaca */
+        .admin-table td:nth-child(6), 
+        .admin-table th:nth-child(6) {
+            text-align: left !important;
+        }
+        
+        /* Garis pemisah tegas antara Header dan Isi */
+        .admin-table thead th {
+            border-bottom: 3px solid #cbd5e1 !important; /* Garis lebih tebal untuk judul */
+            padding-bottom: 16px;
+        }
+
+        /* Merapikan baris agar memiliki garis pemisah antar pelanggan */
+        .admin-table tbody tr {
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        /* Menambahkan garis vertikal di sebelah kanan setiap sel */
+        .admin-table td, 
+        .admin-table th {
+            border-right: 1px solid #e2e8f0; /* Garis vertikal tipis */
+        }
+
+        /* Menghilangkan garis di kolom paling kanan agar tidak double */
+        .admin-table td:last-child, 
+        .admin-table th:last-child {
+            border-right: none;
+        }
+
+        /* Pastikan tabel menggunakan border-collapse agar rapi */
+        .admin-table {
+            border-collapse: collapse;
+            width: 100%;
+        }        
+
+        /* Kontainer tombol agar rapi dan berada di tengah */
+        .action-group {
+            display: flex;
+            flex-direction: column;   /* Tombol berbaris ke bawah */
+            justify-content: center;  /* Tengah vertikal */
+            align-items: center;      /* Tengah horizontal */
+            gap: 6px;                 /* Jarak antar tombol */
+            width: 100%;              /* Mengisi lebar sel */
+            height: 100%;             /* Mengisi tinggi sel */
+        }
+
+        /* Pastikan sel (td) pembungkus juga mendukung penengahan */
+        .admin-table td {
+            vertical-align: middle;   /* Memastikan isi sel rata tengah secara vertikal */
+            text-align: center;       /* Memastikan teks/elemen rata tengah horizontal */
+        }
+
+        .btn-action {
+            /* Hapus width: 100% */
+            width: 110px;          /* Tentukan lebar yang sama untuk semua tombol */
+            min-width: 110px;      /* Memastikan tidak menyusut */
+            
+            padding: 6px 10px;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: white;
+            
+            /* Pengaturan agar teks selalu di tengah */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            white-space: nowrap;   /* Penting: Mencegah teks terpotong/pindah baris */
+        }
+
+        .btn-process { background-color: var(--btn-proses); color: white; }
+        .btn-done    { background-color: var(--btn-selesai); color: white; }
+        .btn-edit    { background-color: var(--btn-edit); color: white; }
+        .btn-wa      { background-color: var(--btn-wa); color: white; }
+        .btn-delete  { background-color: var(--btn-hapus); color: white; }        
+
+        /* Efek Hover untuk memberikan kesan tombol yang aktif */
+        .btn-action:hover {
+            filter: brightness(0.9);
+            transform: translateY(-1px);
+        }
+
+        /* Menggunakan variabel warna */
+        .btn-process { background-color: var(--btn-proses); color: white; }
+        .btn-done    { background-color: var(--btn-selesai); color: white; }
+        .btn-edit    { background-color: var(--btn-edit); color: white; }
+        .btn-wa      { background-color: var(--btn-wa); color: white; }
+        .btn-delete  { background-color: var(--btn-hapus); color: white; }
+
+        .btn-action:hover { opacity: 0.8; }        
+
+        /* Biarkan kolom yang penting lebih lebar, kolom yang kecil tetap ringkas */
+        .admin-table td:nth-child(1) { width: 40px; }   /* No */
+        .admin-table td:nth-child(2) { min-width: 90px; } /* Tanggal */
+        .admin-table td:nth-child(3) { min-width: 100px; } /* Nama */
+        .admin-table td:nth-child(4) { min-width: 100px; } /* No WA */
+        .admin-table td:nth-child(5) { min-width: 115px; } /* Alamat */
+        .admin-table td:nth-child(6) { min-width: 250px; } /* Rincian Menu (Lebih lebar) */
+        .admin-table td:nth-child(7) { min-width: 90px; } /* Catatan */
+        .admin-table td:nth-child(8) { min-width: 140px; } /* Total Tagihan */
+        .admin-table td:nth-child(9) { min-width: 100px; } /* Status */
+        .admin-table td:nth-child(10) { min-width: 150px; } /* Manajemen Aksi */
 
         /* Badges Status */
         .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; display: inline-block; text-transform: uppercase; }
@@ -113,11 +312,34 @@
 
         /* MODAL POPUP */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: white; padding: 25px; border-radius: 12px; width: 100%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); animation: fadeIn 0.2s ease; }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            
+            /* PENTING: Atur batas tinggi agar konten bisa di-scroll */
+            max-height: 85vh; /* Modal tidak akan lebih tinggi dari 85% layar */
+            overflow-y: auto; /* Mengaktifkan scroll jika konten kepanjangan */
+            
+            display: flex;
+            flex-direction: column;
+        }
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text-main); }
         .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; color: var(--text-main); }
-        .modal-buttons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+        .modal-buttons {
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            position: sticky; /* Agar tombol tetap terlihat saat scroll jika perlu */
+            bottom: 0;
+            background: white;
+        }
 
         /* Container Chart */
         .chart-container { position: relative; height: 300px; width: 100%; margin-top: 15px; }
@@ -309,6 +531,11 @@
             <input type="hidden" id="editKey">
             
             <div class="form-group">
+                <label>Tanggal Pesanan (YYYY-MM-DD HH:mm)</label>
+                <input type="text" id="editTanggal" class="form-control" placeholder="Contoh: 2026-06-24 14:30">
+            </div>            
+
+            <div class="form-group">
                 <label>Nama Customer</label>
                 <input type="text" id="editNama">
             </div>
@@ -319,6 +546,10 @@
             <div class="form-group">
                 <label>Alamat Pengiriman Customer</label>
                 <textarea id="editAlamat" rows="2" placeholder="Masukkan alamat perubahan..."></textarea> </div>
+            <div class="form-group">
+                <label>Rincian Menu Order</label>
+                <textarea id="editMenu" class="form-control" rows="4" placeholder="Contoh: Lumpia Beef (1x) - 19000"></textarea>
+            </div>                
             <div class="form-group">
                 <label>Catatan Request Khusus</label>
                 <textarea id="editCatatan" rows="3"></textarea>
@@ -514,21 +745,24 @@ database.ref('pesanan').on('value', (snapshot) => {
 
     // 3. Render ke tabel
     orderList.forEach((order, index) => {
-        const key = order.key; // Ambil key yang sudah kita simpan tadi
-        
+        const key = order.key; 
         let itemsLi = "";
-        let waItemsText = "";
-        
-        // Proses Menu (sama seperti sebelumnya)
+        let waItemsText = ""; // Untuk Chat WA
+        let pdfItemsText = ""; // UNTUK PDF (Penting: Deklarasi di sini)
+
         const daftarMenu = order.menu_order || order.item_keranjang;
         if (daftarMenu && Array.isArray(daftarMenu)) {
             daftarMenu.forEach(item => {
                 const sub = (Number(item.harga) || 0) * (Number(item.qty) || 1);
                 itemsLi += `<li><strong>${item.menu}</strong> (${item.qty}x) - Rp ${sub.toLocaleString('id-ID')}</li>`;
                 waItemsText += `- ${item.menu} (${item.qty}x) - Rp ${sub.toLocaleString('id-ID')}\n`;
+                
+                // Tambahkan ini untuk PDF
+                pdfItemsText += `${item.menu} (${item.qty}x) - Rp ${sub.toLocaleString('id-ID')}\n`;
             });
         } else {
             itemsLi = "<li>-</li>";
+            pdfItemsText = "-";
         }
 
         const statusClass = order.status === "selesai" ? "badge-selesai" : (order.status === "diproses" ? "badge-diproses" : "badge-pending");
@@ -540,31 +774,37 @@ database.ref('pesanan').on('value', (snapshot) => {
         
         let urlWA = `https://api.whatsapp.com/send?phone=${formatNoHp(order.no_hp)}&text=${encodeURIComponent(textWA)}`;
 
-        // Buat Baris
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td style="text-align: center;">${String(index + 1).padStart(3, '0')}</td>
-            <td style="white-space: nowrap;">${order.tanggal || '-'}</td>
-            <td><strong>${order.nama || '-'}</strong></td>
-            <td>${order.no_hp || '-'}</td>
-            <td>${order.alamat || '-'}</td> 
-            <td><ul class="table-item-list">${itemsLi}</ul></td>
-            <td style="color: var(--amber);">${order.catatan || '-'}</td>
-            <td style="font-weight: 700;">Rp ${Number(order.total_bayar || 0).toLocaleString('id-ID')}</td>
-            <td><span class="badge ${statusClass}">${(order.status || 'pending').toUpperCase()}</span></td>
-            <td>
-                <div class="action-group">
-                    <button class="btn-action btn-process" onclick="updateStatus('${key}', 'diproses')">Proses</button>
-                    <button class="btn-action btn-done" onclick="updateStatus('${key}', 'selesai')">Selesai</button>
-                    <button class="btn-action btn-edit" onclick="openEditModal('${key}')">Edit</button>
-                    <a href="${urlWA}" target="_blank" style="text-decoration: none;">
-                        <button class="btn-action btn-wa" style="background-color: #25d366; color: white;">Chat WA</button>
-                    </a>
-                    <button class="btn-action btn-delete" onclick="hapusPesanan('${key}')">Hapus</button>
-                </div>
-            </td>
+    const tr = document.createElement('tr');
+    const [tgl, jam] = (order.tanggal || " - ").split(" ");
+    tr.innerHTML = `
+        <td style="text-align: center;">${String(index + 1).padStart(3, '0')}</td>
+        <td>
+            <div class="date-container">
+                <span class="d-block">${tgl}</span>
+                <small class="d-block text-muted">${jam}</small>
+            </div>
+        </td>
+        <td><strong>${order.nama || '-'}</strong></td>
+        <td>${order.no_hp || '-'}</td>
+        <td>${order.alamat || '-'}</td> 
+        <td data-pdf-text="${pdfItemsText.trim()}"><ul class="table-item-list">${itemsLi}</ul></td>
+        <td style="color: var(--amber);">${order.catatan || '-'}</td>
+        <td style="font-weight: 700;">Rp ${Number(order.total_bayar || 0).toLocaleString('id-ID')}</td>
+        <td><span class="badge ${statusClass}">${(order.status || 'pending').toUpperCase()}</span></td>
+        
+        <td>
+            <div class="action-group">
+                <button class="btn-action btn-process" onclick="updateStatus('${key}', 'diproses')">Proses</button>
+                <button class="btn-action btn-done" onclick="updateStatus('${key}', 'selesai')">Selesai</button>
+                <button class="btn-action btn-edit" onclick="openEditModal('${key}')">Edit</button>
+                <a href="${urlWA}" target="_blank" style="text-decoration: none;">
+                    <button class="btn-action btn-wa" style="background-color: #25d366; color: white;">Chat WA</button>
+                </a>
+                <button class="btn-action btn-delete" onclick="hapusPesanan('${key}')">Hapus</button>
+            </div>
+        </td>
         `;
-        tableBody.appendChild(tr);
+    tableBody.appendChild(tr);
     });
 
     isInitialLoad = false;
@@ -663,7 +903,8 @@ function buatNotifikasiPopupVisual(namaPembeli, totalBayar) {
             document.getElementById('editAlamat').value = order.alamat || "";
             document.getElementById('editCatatan').value = order.catatan || "";
             document.getElementById('editTotalBayar').value = order.total_bayar || 0;
-
+            document.getElementById('editTanggal').value = order.tanggal || "";
+            document.getElementById('editMenu').value = order.rincian_menu || "";
             // Munculkan modal
             modal.style.display = "flex";
         }
@@ -696,13 +937,17 @@ function buatNotifikasiPopupVisual(namaPembeli, totalBayar) {
             
             // TAMBAHAN: Mengambil data alamat dari input modal edit
             const alamatBaru = document.getElementById('editAlamat').value.trim();
+            const tanggalBaru = document.getElementById('editTanggal').value.trim(); // BARU
+            const menuBaru = document.getElementById('editMenu').value.trim();
 
             database.ref('pesanan/' + key).update({
                 nama: document.getElementById('editNama').value.trim(),
                 no_hp: document.getElementById('editNoHp').value.trim(),
                 alamat: alamatBaru, // TAMBAHAN: Ikut mengupdate alamat di Firebase
                 catatan: document.getElementById('editCatatan').value.trim(),
-                total_bayar: Number(document.getElementById('editTotalBayar').value)
+                total_bayar: Number(document.getElementById('editTotalBayar').value),
+                tanggal: tanggalBaru,
+                rincian_menu: menuBaru                
             }).then(() => { 
                 closeModal('editModal'); 
                 alert("Data pesanan berhasil dikoreksi!"); 
@@ -1211,19 +1456,31 @@ function renderLaporanKeuangan() {
         window.addEventListener('load', function() {
             console.log("Skrip Ekspor Aktif - Filter Kolom Diaktifkan");
 
-            // Fungsi untuk membuat duplikat tabel yang bersih (Tanpa Status & Aksi)
-            function getCleanTable() {
-                const originalTable = document.getElementById('tabelPesananUtama');
-                const cleanTable = document.createElement('table');
-                cleanTable.innerHTML = originalTable.innerHTML;
-                
-                // Hapus kolom ke-9 dan ke-8 dari setiap baris (dilakukan dari belakang agar aman)
-                for (let i = 0; i < cleanTable.rows.length; i++) {
-                    if (cleanTable.rows[i].cells.length > 9) cleanTable.rows[i].deleteCell(9); // Aksi
-                    if (cleanTable.rows[i].cells.length > 8) cleanTable.rows[i].deleteCell(8); // Status
+        function getCleanTable() {
+            const originalTable = document.getElementById('tabelPesananUtama');
+            const cleanTable = originalTable.cloneNode(true);
+            const menuColumnIndex = 5; // Pastikan index ini benar sesuai tabel Anda
+
+            for (let i = 0; i < cleanTable.rows.length; i++) {
+                let cell = cleanTable.rows[i].cells[menuColumnIndex];
+                if (cell) {
+                    // 1. Ambil teks murni dari elemen tersebut
+                    // Ini akan membuang tag <ul>, <li>, dan <strong>
+                    let menuText = cell.innerText.replace(/•/g, '|');    
+                    let text = cell.innerText; 
+                    
+                    // 2. Ganti spasi/karakter yang tidak diinginkan agar lebih rapi
+                    // Jika teksnya masih menyatu, kita akan memberi tanda baris baru
+                    // Anda bisa menyesuaikan replace ini berdasarkan output yang Anda inginkan
+                    cell.innerHTML = text; 
                 }
-                return cleanTable;
+                
+                // Hapus kolom Aksi (9) dan Status (8)
+                if (cleanTable.rows[i].cells.length > 9) cleanTable.rows[i].deleteCell(9);
+                if (cleanTable.rows[i].cells.length > 8) cleanTable.rows[i].deleteCell(8);
             }
+            return cleanTable;
+        }
 
             // EXPORT EXCEL
             document.getElementById('btnExportExcel').onclick = function() {
@@ -1238,13 +1495,30 @@ function renderLaporanKeuangan() {
                 const doc = new jsPDF('l', 'mm', 'a4');
                 doc.text("Laporan Data Antrean Pesanan", 14, 15);
                 
-                // Kita gunakan tabel bersih yang sudah difilter
-                doc.autoTable({ 
-                    html: getCleanTable(), 
-                    startY: 20,
-                    theme: 'grid'
-                });
-                doc.save("Data_Antrean_Pesanan.pdf");
+            doc.autoTable({ 
+                html: getCleanTable(), 
+                startY: 20,
+                theme: 'grid',
+                styles: { 
+                    fontSize: 8, 
+                    valign: 'middle',
+                    cellPadding: 3
+                },
+                columnStyles: {
+                    5: { cellWidth: 60 } 
+                },
+                // TAMBAHKAN BAGIAN INI:
+                didParseCell: function(data) {
+                    // Ganti angka 5 dengan index kolom Rincian Menu Anda
+                    if (data.column.index === 5 && data.cell.text) {
+                        // Mengubah string yang dipisah oleh '|' (atau bullet) menjadi baris baru
+                        let content = data.cell.text.join('');
+                        // Jika Anda menggunakan tanda '•' di web, ganti '|' di bawah dengan '•'
+                        data.cell.text = content.split('|').filter(item => item.trim() !== "");
+                    }
+                }
+            });
+            doc.save("Data_Antrean_Pesanan.pdf");
             };
         });
     </script>
