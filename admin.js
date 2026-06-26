@@ -1,3 +1,5 @@
+alert("admin.js berhasil dimuat!");
+console.log("admin.js berhasil dimuat dan siap digunakan.");
 // =========================================================================
 // 1. VARIABEL GLOBAL PEMBUKUAN & CACHE DATA
 // =========================================================================
@@ -375,3 +377,55 @@ function renderLaporanKeuangan() {
         });
     }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // FUNGSI UTAMA UNTUK MENGAMBIL DATA BERSIH (0 sampai 7)
+    function getCleanTableData() {
+        const originalTable = document.getElementById('tabelPesananUtama');
+        const newTable = document.createElement('table');
+        
+        // Salin baris dan sel hanya sampai kolom ke-7 (Total Tagihan)
+        for (let i = 0; i < originalTable.rows.length; i++) {
+            const newRow = newTable.insertRow();
+            for (let j = 0; j <= 7; j++) { 
+                const cell = originalTable.rows[i].cells[j];
+                if (cell) {
+                    const newCell = newRow.insertCell();
+                    newCell.innerHTML = cell.innerHTML;
+                }
+            }
+        }
+        return newTable;
+    }
+
+    // EVENT LISTENER EXCEL
+    const btnExcel = document.getElementById('btnExportExcel');
+    if (btnExcel) {
+        btnExcel.addEventListener('click', function(e) {
+            e.preventDefault();
+            const cleanTable = getCleanTableData();
+            const wb = XLSX.utils.table_to_book(cleanTable, {sheet: "Data Antrean"});
+            XLSX.writeFile(wb, "Data_Antrean_Pesanan.xlsx");
+        });
+    }
+
+    // EVENT LISTENER PDF
+    const btnPDF = document.getElementById('btnExportPDF');
+    if (btnPDF) {
+        btnPDF.addEventListener('click', function(e) {
+            e.preventDefault();
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('l', 'mm', 'a4');
+            doc.text("Laporan Data Antrean Pesanan", 14, 15);
+            
+            // Menggunakan tabel bersih yang kita buat di fungsi
+            doc.autoTable({ 
+                html: getCleanTableData(), 
+                startY: 20,
+                theme: 'grid'
+            });
+            doc.save("Data_Antrean_Pesanan.pdf");
+        });
+    }
+});
