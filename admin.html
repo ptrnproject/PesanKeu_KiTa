@@ -117,6 +117,18 @@
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
+    
+        <meta charset="UTF-8">
+        <title>Dashboard Admin</title>
+        
+        <style>
+            .action-group { display: flex; gap: 5px; }
+            .btn-action { padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
+            .btn-process { background-color: #f59e0b; color: white; }
+            .btn-done { background-color: #10b981; color: white; }
+            .btn-edit { background-color: #3b82f6; color: white; }
+            .btn-delete { background-color: #ef4444; color: white; }
+        </style>  
 </head>
 <body>
 
@@ -150,23 +162,27 @@
 
                 <div class="table-responsive">
                     <table class="admin-table" id="tabelPesananUtama">
-                        <thead>
-                            <tr>
-                                <th>Tanggal & Jam</th>
-                                <th>Nama Pelanggan</th>
-                                <th>No. WhatsApp</th>
-                                <th>Alamat</th> <th>Rincian Menu Order</th>
-                                <th>Catatan Request</th>
-                                <th>Total Tagihan</th>
-                                <th>Status</th>
-                                <th style="text-align: center;">Manajemen Aksi Admin</th>
-                            </tr>
-                        </thead>
-                        <tbody id="adminTableBody">
-                            <tr>
-                                <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 30px;">Menghubungkan ke Realtime Cloud Database...</td>
-                            </tr>
-                        </tbody>
+                <thead>
+                    <tr>
+                        <th>No.</th>
+                        <th>Tanggal & Jam</th>
+                        <th>Nama Pelanggan</th>
+                        <th>No. WhatsApp</th>
+                        <th>Alamat</th>
+                        <th>Rincian Menu Order</th>
+                        <th>Catatan Request</th>
+                        <th>Total Tagihan</th>
+                        <th>Status</th>
+                        <th style="text-align: center;">Manajemen Aksi Admin</th>
+                    </tr>
+                </thead>
+                    <tbody id="adminTableBody">
+                        <tr>
+                            <td colspan="10" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                                Menghubungkan ke Realtime Cloud Database...
+                            </td>
+                        </tr>
+                    </tbody>
                     </table>
                 </div>
             </div>
@@ -473,93 +489,73 @@ database.ref('pesanan').on('value', (snapshot) => {
     const tableBody = document.getElementById('adminTableBody');
     if (!tableBody) return;
     
-    tableBody.innerHTML = "";
+    tableBody.innerHTML = ""; // Bersihkan tabel sebelum mengisi ulang
     const data = snapshot.val();
-    
-    // Simpan kunci pesanan sebelum diperbarui untuk mendeteksi data baru
-    const oldKeys = Object.keys(localOrdersCache || {});
+    // --- RENDER TABEL (Logika Baru agar Nomor Urut Stabil) ---
+
     localOrdersCache = data || {};
+    if (!data) { /* ... handle kosong ... */ return; }
+    
+    // 1. Ubah data menjadi array agar bisa diurutkan
+    const orderList = Object.keys(data).map(key => ({
+        key: key,
+        ...data[key]
+    }));
 
-    if (!data) {
-        // Kolom diubah menjadi colspan="9" agar pas penuh dari ujung ke ujung
-        tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 30px;">Belum ada pesanan terdata di server.</td></tr>`;
-        return;
-    }
+    // 2. Urutkan berdasarkan tanggal (pesanan lama ke atas)
+    // Asumsi: format 'order.tanggal' bisa di-sort (contoh: DD-MM-YYYY HH:mm:ss)
+    // Jika tanggal tidak bisa di-sort, tambahkan 'timestamp' di database saat pesan
+    orderList.sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
 
-    const currentKeys = Object.keys(data);
-
-    // LOGIKA DETEKSI PESANAN BARU
-    if (!isInitialLoad) {
-        const newKeys = currentKeys.filter(key => !oldKeys.includes(key));
+    // 3. Render ke tabel
+    orderList.forEach((order, index) => {
+        const key = order.key; // Ambil key yang sudah kita simpan tadi
         
-        if (newKeys.length > 0) {
-            const pesananBaru = data[newKeys[0]];
-            
-            // 1. Putar Suara Notifikasi Lonceng
-            const audio = document.getElementById('notifSound');
-            if (audio) {
-                audio.play().catch(e => console.log("Menunggu interaksi pengguna untuk suara"));
-            }
-
-            // 2. Munculkan Notifikasi Pop-up Visual di Layar
-            buatNotifikasiPopupVisual(pesananBaru.nama, pesananBaru.total_bayar);
-        }
-    }
-
-    // Render baris tabel pesanan ke layar (9 Kolom Sempurna)
-    Object.keys(data).reverse().forEach((key) => {
-        const order = data[key];
         let itemsLi = "";
-        let waItemsText = ""; 
+        let waItemsText = "";
         
-        // ✅ PERBAIKAN 1: Menghitung harga per item agar muncul di tabel
+        // Proses Menu (sama seperti sebelumnya)
         const daftarMenu = order.menu_order || order.item_keranjang;
         if (daftarMenu && Array.isArray(daftarMenu)) {
-            daftarMenu.forEach((item, index) => {
-                // Pastikan ada variabel harga dan qty
-                const harga = Number(item.harga) || 0;
-                const qty = Number(item.qty) || 1;
-                const subtotal = harga * qty;
-
-                // Tambahkan subtotal ke tampilan list (itemsLi)
-                itemsLi += `<li>
-                    <strong>${item.menu}</strong> (${qty}x)<br>
-                    <span style="color: var(--text-muted); font-size:11px;">${item.kustomisasi || ''}</span><br>
-                    <span style="color: #0f766e; font-size: 11px; font-weight: bold;">Subtotal: Rp ${subtotal.toLocaleString('id-ID')}</span>
-                </li>`;
-                
-                waItemsText += `${index + 1}. ${item.menu} (${qty}x) -> Rp ${subtotal.toLocaleString('id-ID')}\n`;
+            daftarMenu.forEach(item => {
+                const sub = (Number(item.harga) || 0) * (Number(item.qty) || 1);
+                itemsLi += `<li><strong>${item.menu}</strong> (${item.qty}x) - Rp ${sub.toLocaleString('id-ID')}</li>`;
+                waItemsText += `- ${item.menu} (${item.qty}x) - Rp ${sub.toLocaleString('id-ID')}\n`;
             });
         } else {
             itemsLi = "<li>-</li>";
-            waItemsText = "-";
         }
 
-        let statusClass = "badge-pending";
-        if (order.status === "diproses") statusClass = "badge-diproses";
-        if (order.status === "selesai") statusClass = "badge-selesai";
+        const statusClass = order.status === "selesai" ? "badge-selesai" : (order.status === "diproses" ? "badge-diproses" : "badge-pending");
 
-        let textWA = `Halo Kak *${order.nama}*,\n\nKami dari *KiTa PesanKeu* ingin mengonfirmasi rincian pesanan Kakak. Apakah sudah sesuai?\n\n*Rincian Menu Anda:*\n${waItemsText}\n*Total Tagihan:* Rp ${Number(order.total_bayar).toLocaleString('id-ID')}\n\nTerima kasih! 🙏✨`;
+        let textWA = `Halo Kak *${order.nama}*,\n\nTerima kasih telah memesan di *KiTa PesanKeu*! 🙏\n\n` +
+                     `Kami ingin mengonfirmasi rincian pesanan Kakak:\n\n*Detail Pesanan:*\n${waItemsText}\n` +
+                     `*Total Tagihan:* Rp ${Number(order.total_bayar).toLocaleString('id-ID')}\n\n` +
+                     `Mohon konfirmasinya ya Kak. Terima kasih!`;
+        
         let urlWA = `https://api.whatsapp.com/send?phone=${formatNoHp(order.no_hp)}&text=${encodeURIComponent(textWA)}`;
 
+        // Buat Baris
         const tr = document.createElement('tr');
-        // ✅ PERBAIKAN 2: Menambahkan kolom Alamat di kolom ke-4 agar urutannya pas dengan file HTML Admin
         tr.innerHTML = `
+            <td style="text-align: center;">${String(index + 1).padStart(3, '0')}</td>
             <td style="white-space: nowrap;">${order.tanggal || '-'}</td>
             <td><strong>${order.nama || '-'}</strong></td>
             <td>${order.no_hp || '-'}</td>
             <td>${order.alamat || '-'}</td> 
             <td><ul class="table-item-list">${itemsLi}</ul></td>
-            <td style="color: var(--amber); font-style: italic;">${order.catatan || '-'}</td>
-            <td style="font-weight: 700; color: #27ae60;">Rp ${Number(order.total_bayar || 0).toLocaleString('id-ID')}</td>
+            <td style="color: var(--amber);">${order.catatan || '-'}</td>
+            <td style="font-weight: 700;">Rp ${Number(order.total_bayar || 0).toLocaleString('id-ID')}</td>
             <td><span class="badge ${statusClass}">${(order.status || 'pending').toUpperCase()}</span></td>
             <td>
                 <div class="action-group">
-                    <button class="btn-action btn-process" onclick="updateStatus('${key}', 'diproses')"><i class="fa-solid fa-fire"></i> Proses</button>
-                    <button class="btn-action btn-done" onclick="updateStatus('${key}', 'selesai')"><i class="fa-solid fa-check"></i> Selesai</button>
-                    <button class="btn-action btn-edit" onclick="openEditModal('${key}')"><i class="fa-solid fa-pen"></i> Edit</button>
-                    <a href="${urlWA}" target="_blank" style="text-decoration:none;"><button class="btn-action btn-wa"><i class="fa-brands fa-whatsapp"></i> Chat</button></a>
-                    <button class="btn-action btn-delete" onclick="hapusPesanan('${key}')"><i class="fa-solid fa-trash"></i></button>
+                    <button class="btn-action btn-process" onclick="updateStatus('${key}', 'diproses')">Proses</button>
+                    <button class="btn-action btn-done" onclick="updateStatus('${key}', 'selesai')">Selesai</button>
+                    <button class="btn-action btn-edit" onclick="openEditModal('${key}')">Edit</button>
+                    <a href="${urlWA}" target="_blank" style="text-decoration: none;">
+                        <button class="btn-action btn-wa" style="background-color: #25d366; color: white;">Chat WA</button>
+                    </a>
+                    <button class="btn-action btn-delete" onclick="hapusPesanan('${key}')">Hapus</button>
                 </div>
             </td>
         `;
@@ -567,9 +563,7 @@ database.ref('pesanan').on('value', (snapshot) => {
     });
 
     isInitialLoad = false;
-    if (typeof renderLaporanKeuangan === "function") {
-        renderLaporanKeuangan();
-    }
+    if (typeof renderLaporanKeuangan === "function") renderLaporanKeuangan();
 });
 
 // =========================================================================
@@ -642,15 +636,31 @@ function buatNotifikasiPopupVisual(namaPembeli, totalBayar) {
         }
 
         function openEditModal(key) {
+            console.log("Mencoba membuka modal untuk:", key);
+            
             const order = localOrdersCache[key];
-            if (!order) return;
+            const modal = document.getElementById('editModal');
+            
+            if (!order) {
+                alert("Data pesanan tidak ditemukan!");
+                return;
+            }
+            
+            if (!modal) {
+                alert("Elemen modal dengan id 'editModal' tidak ditemukan di HTML!");
+                return;
+            }
+
+            // Isi data
             document.getElementById('editKey').value = key;
-            document.getElementById('editNama').value = order.nama;
-            document.getElementById('editNoHp').value = order.no_hp;
+            document.getElementById('editNama').value = order.nama || "";
+            document.getElementById('editNoHp').value = order.no_hp || "";
             document.getElementById('editAlamat').value = order.alamat || "";
             document.getElementById('editCatatan').value = order.catatan || "";
-            document.getElementById('editTotalBayar').value = order.total_bayar;
-            document.getElementById('editModal').style.display = "flex";
+            document.getElementById('editTotalBayar').value = order.total_bayar || 0;
+
+            // Munculkan modal
+            modal.style.display = "flex";
         }
 
         function openFinanceModal() {
