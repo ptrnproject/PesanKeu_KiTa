@@ -1,14 +1,21 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
+<meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Manajemen Admin - KiTa PesanKeu</title>
-    <!-- Logo/Favicon pada tab browser -->
-    <link rel="icon" type="image/png" href="image/LOGO_KITA.png">    
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght=300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <link rel="icon" type="image/png" href="image/LOGO_KITA.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
         /* TEMA TERANG PROFESIONAL (LIGHT MODE) */
         :root {
@@ -131,7 +138,7 @@
         </style>  
 </head>
 <body>
-
+    
     <div class="container">
         <header class="admin-header">
             <div>
@@ -159,6 +166,11 @@
                 <div class="card-title-area">
                     <h2 style="font-size: 16px; font-weight: 600;"><i class="fa-solid fa-folder-open"></i> Log Alur Data Antrean</h2>
                 </div>
+
+                <div class="export-buttons" style="margin-bottom: 20px;">
+                    <button id="btnExportExcel" style="background: #10b981; color: white; padding: 10px; border: none; cursor: pointer;">Export Excel</button>
+                    <button id="btnExportPDF" style="background: #ef4444; color: white; padding: 10px; border: none; cursor: pointer;">Export PDF</button>
+                </div>                
 
                 <div class="table-responsive">
                     <table class="admin-table" id="tabelPesananUtama">
@@ -372,13 +384,6 @@
             </p>
         </div>
     </footer>    
-
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
         if (sessionStorage.getItem("adminLoggedIn") !== "true") {
@@ -1201,6 +1206,47 @@ function renderLaporanKeuangan() {
             if (clean.startsWith('0')) clean = '62' + clean.slice(1);
             return clean;
         }
+    </script>
+    <script>
+        window.addEventListener('load', function() {
+            console.log("Skrip Ekspor Aktif - Filter Kolom Diaktifkan");
+
+            // Fungsi untuk membuat duplikat tabel yang bersih (Tanpa Status & Aksi)
+            function getCleanTable() {
+                const originalTable = document.getElementById('tabelPesananUtama');
+                const cleanTable = document.createElement('table');
+                cleanTable.innerHTML = originalTable.innerHTML;
+                
+                // Hapus kolom ke-9 dan ke-8 dari setiap baris (dilakukan dari belakang agar aman)
+                for (let i = 0; i < cleanTable.rows.length; i++) {
+                    if (cleanTable.rows[i].cells.length > 9) cleanTable.rows[i].deleteCell(9); // Aksi
+                    if (cleanTable.rows[i].cells.length > 8) cleanTable.rows[i].deleteCell(8); // Status
+                }
+                return cleanTable;
+            }
+
+            // EXPORT EXCEL
+            document.getElementById('btnExportExcel').onclick = function() {
+                const tableBersih = getCleanTable();
+                const wb = XLSX.utils.table_to_book(tableBersih, {sheet: "Data Antrean"});
+                XLSX.writeFile(wb, "Data_Antrean_Pesanan.xlsx");
+            };
+
+            // EXPORT PDF
+            document.getElementById('btnExportPDF').onclick = function() {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('l', 'mm', 'a4');
+                doc.text("Laporan Data Antrean Pesanan", 14, 15);
+                
+                // Kita gunakan tabel bersih yang sudah difilter
+                doc.autoTable({ 
+                    html: getCleanTable(), 
+                    startY: 20,
+                    theme: 'grid'
+                });
+                doc.save("Data_Antrean_Pesanan.pdf");
+            };
+        });
     </script>
 </body>
 </html>
