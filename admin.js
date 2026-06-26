@@ -1,783 +1,141 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>    
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Manajemen Admin - KiTa PesanKeu</title>
-    <!-- Logo/Favicon pada tab browser -->
-    <link rel="icon" type="image/png" href="image/LOGO_KITA.png">    
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght=300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <style>
-        /* TEMA TERANG PROFESIONAL (LIGHT MODE) */
-        :root {
-            --bg-main: #f8fafc;
-            --bg-card: #ffffff;
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-            --border-color: #e2e8f0;
-            --primary: #2ecc71;
-            --primary-hover: #27ae60;
-            --amber: #f39c12;
-            --blue: #3498db;
-            --danger: #e74c3c;
-            --purple: #9b59b6;
-        }
+// =========================================================================
+// 1. VARIABEL GLOBAL PEMBUKUAN & CACHE DATA
+// =========================================================================
+let localOrdersCache = {};         // Menyimpan data pesanan dari Firebase
+let localFinanceCache = {};        // Menyimpan data transaksi keuangan manual
+let myLineChart = null;            // Menyimpan objek grafik Chart.js
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-        body { background-color: var(--bg-main); color: var(--text-main); padding: 30px 15px; }
-        .container { max-width: 1200px; margin: 0 auto; }
+let totalPemasukanGlobal = 0;
+let totalPengeluaranGlobal = 0;
+let listPesananSelesaiGlobal = [];
+let listTransaksiManualGlobal = [];
 
-        /* Header Area */
-        .admin-header { background: var(--bg-card); padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 25px; border-bottom: 4px solid var(--primary); display: flex; justify-content: space-between; align-items: center; }
-        .admin-header h1 { font-size: 24px; color: var(--text-main); font-weight: 700; }
-        .admin-header h1 span { color: var(--primary); }
-        .admin-header p { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
-
-        /* Navigasi Tab */
-        .admin-nav { display: flex; gap: 10px; margin-bottom: 25px; background: var(--bg-card); padding: 8px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-        .nav-tab { background: none; border: none; color: var(--text-muted); padding: 12px 20px; font-weight: 500; font-size: 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
-        .nav-tab.active { background: var(--primary); color: #fff; font-weight: 600; }
-
-        /* Tampilan Tab Konten */
-        .tab-content { display: none; animation: fadeIn 0.3s ease; }
-        .tab-content.active { display: block; }
-
-        /* Struktur Komponen Kartu / Panel Utama */
-        .admin-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); margin-bottom: 25px; }
-        .card-title-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
-        
-        /* Tombol Aksi Dokumentasi (PDF & Excel) */
-        .btn-export { border: none; padding: 8px 16px; font-size: 13px; font-weight: 600; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px; color: white; transition: 0.2s; }
-        .btn-excel { background-color: #1f7246; }
-        .btn-excel:hover { background-color: #1a5e3a; }
-        .btn-pdf { background-color: #b30000; }
-        .btn-pdf:hover { background-color: #930000; }
-
-        /* TABEL PESANAN TERPERINCI */
-        .table-responsive { width: 100%; overflow-x: auto; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); }
-        .admin-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
-        .admin-table th { background-color: #f1f5f9; color: var(--text-main); padding: 14px; font-weight: 600; border-bottom: 2px solid var(--border-color); }
-        .admin-table td { padding: 14px; border-bottom: 1px solid var(--border-color); vertical-align: top; color: var(--text-main); }
-        .admin-table tr:hover { background-color: #f8fafc; }
-
-        /* Badges Status */
-        .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; display: inline-block; text-transform: uppercase; }
-        .badge-pending { background: #fef3c7; color: #d97706; }
-        .badge-diproses { background: #dbeafe; color: #2563eb; }
-        .badge-selesai { background: #dcfce7; color: #16a34a; }
-        
-        .badge-pemasukan { background: #dcfce7; color: #16a34a; }
-        .badge-pengeluaran { background: #fee2e2; color: #dc2626; }
-
-        /* Daftar Item Menu */
-        .table-item-list { list-style: none; }
-        .table-item-list li { margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px dashed #f1f5f9; }
-        .table-item-list li:last-child { border-bottom: none; }
-
-        /* Grid Statistik Keuangan */
-        .report-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 25px; }
-        .stat-box { background: var(--bg-card); padding: 20px; border-radius: 12px; text-align: center; border: 1px solid var(--border-color); box-shadow: 0 2px 4px rgba(0,0,0,0.01); }
-        .stat-box span { font-size: 13px; color: var(--text-muted); font-weight: 500; }
-        .stat-box h3 { font-size: 22px; margin-top: 8px; font-weight: 700; }
-
-        /* Filter Area */
-        .filter-area { display: flex; gap: 15px; margin-bottom: 20px; align-items: center; background: #f1f5f9; padding: 15px; border-radius: 8px; }
-        .filter-group { display: flex; align-items: center; gap: 8px; }
-        .filter-group label { font-size: 13px; font-weight: 600; }
-        .filter-group select { padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 13px; font-weight: 500; background: white; }
-
-        /* Tombol Aksi */
-        .action-group { display: flex; gap: 6px; flex-wrap: wrap; }
-        .btn-action { border: none; padding: 6px 10px; border-radius: 6px; color: white; cursor: pointer; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4px; transition: 0.1s; }
-        .btn-process { background-color: var(--blue); }
-        .btn-done { background-color: var(--primary); }
-        .btn-edit { background-color: var(--amber); }
-        .btn-delete { background-color: var(--danger); }
-        .btn-wa { background-color: #25d366; }
-        .btn-add-finance { background: #475569; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; }
-
-        /* Grid Khusus Omset Harian */
-        .omset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 15px; }
-        .omset-box { background: #f8fafc; border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; text-align: center; }
-        .omset-box .tgl-label { font-size: 11px; font-weight: 600; color: var(--text-muted); }
-        .omset-box .val-label { font-size: 13px; font-weight: 700; color: var(--purple); margin-top: 4px; }
-
-        /* MODAL POPUP */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: white; padding: 25px; border-radius: 12px; width: 100%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); animation: fadeIn 0.2s ease; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text-main); }
-        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; color: var(--text-main); }
-        .modal-buttons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
-
-        /* Container Chart */
-        .chart-container { position: relative; height: 300px; width: 100%; margin-top: 15px; }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-    </style>
-    
-        <meta charset="UTF-8">
-        <title>Dashboard Admin</title>
-        
-        <style>
-            .action-group { display: flex; gap: 5px; }
-            .btn-action { padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
-            .btn-process { background-color: #f59e0b; color: white; }
-            .btn-done { background-color: #10b981; color: white; }
-            .btn-edit { background-color: #3b82f6; color: white; }
-            .btn-delete { background-color: #ef4444; color: white; }
-        </style>  
-</head>
-<body>
-
-    <div class="container">
-        <header class="admin-header">
-            <div>
-                <h1>KiTa <span>Admin Panel</span></h1>
-                <p><i class="fa-solid fa-circle" style="color: var(--primary); font-size: 10px;"></i> Sistem Manajemen Penjualan Terintegrasi Cloud</p>
-            </div>
-            <div class="logo-area" style="font-weight: 700; color: var(--text-muted); font-size: 14px;">
-                <i class="fa-solid fa-user-shield"></i> Kasir & Keuangan
-            </div>
-        </header>
-
-        <audio id="notifSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-500.wav" preload="auto"></audio>
-
-        <nav class="admin-nav">
-            <button class="nav-tab active" onclick="switchTab('tab-pesanan')">
-                <i class="fa-solid fa-table-list"></i> Tablet Pesanan Cust
-            </button>
-            <button class="nav-tab" onclick="switchTab('tab-keuangan')">
-                <i class="fa-solid fa-chart-line"></i> Pembukuan & Arus Kas
-            </button>
-        </nav>
-
-        <div id="tab-pesanan" class="tab-content active">
-            <div class="admin-card">
-                <div class="card-title-area">
-                    <h2 style="font-size: 16px; font-weight: 600;"><i class="fa-solid fa-folder-open"></i> Log Alur Data Antrean</h2>
-                </div>
-                
-                <div class="export-buttons" style="margin-bottom: 20px;">
-                    <button onclick="exportExcel()" style="background: #10b981; color: white; padding: 10px; border: none; cursor: pointer;">Export Excel</button>
-                    <button onclick="exportPDF()" style="background: #ef4444; color: white; padding: 10px; border: none; cursor: pointer;">Export PDF</button>
-                </div>                
-
-                <div class="table-responsive">
-                    <table class="admin-table" id="tabelPesananUtama">
-                <thead>
-                    <tr>
-                        <th>No.</th>
-                        <th>Tanggal & Jam</th>
-                        <th>Nama Pelanggan</th>
-                        <th>No. WhatsApp</th>
-                        <th>Alamat</th>
-                        <th>Rincian Menu Order</th>
-                        <th>Catatan Request</th>
-                        <th>Total Tagihan</th>
-                        <th>Status</th>
-                        <th style="text-align: center;">Manajemen Aksi Admin</th>
-                    </tr>
-                </thead>
-                    <tbody id="adminTableBody">
-                        <tr>
-                            <td colspan="10" style="text-align: center; color: var(--text-muted); padding: 30px;">
-                                Menghubungkan ke Realtime Cloud Database...
-                            </td>
-                        </tr>
-                    </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div id="tab-keuangan" class="tab-content">
-            
-            <div class="admin-card" style="padding: 15px; margin-bottom: 15px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                    <div class="filter-area" style="margin-bottom: 0; padding: 5px 10px; background: transparent;">
-                        <div class="filter-group">
-                            <label><i class="fa-solid fa-calendar-days"></i> Bulan:</label>
-                            <select id="filterBulan" onchange="renderLaporanKeuangan()">
-                                <option value="all">-- Semua Bulan --</option>
-                                <option value="01">Januari</option>
-                                <option value="02">Februari</option>
-                                <option value="03">Maret</option>
-                                <option value="04">April</option>
-                                <option value="05">Mei</option>
-                                <option value="06">Juni</option>
-                                <option value="07">Juli</option>
-                                <option value="08">Agustus</option>
-                                <option value="09">September</option>
-                                <option value="10">Oktober</option>
-                                <option value="11">November</option>
-                                <option value="12">Desember</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label>Tahun:</label>
-                            <select id="filterTahun" onchange="renderLaporanKeuangan()">
-                                <option value="2026">2026</option>
-                                <option value="2027">2027</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <button class="btn-add-finance" onclick="openFinanceModal()">
-                            <i class="fa-solid fa-circle-plus"></i> Catat Keuangan Manual
-                        </button>
-                        <button class="btn-export btn-excel" onclick="exportKeExcel()"><i class="fa-solid fa-file-excel"></i> Excel Multi-Sheet</button>
-                        <button class="btn-export btn-pdf" onclick="exportKePDF()"><i class="fa-solid fa-file-pdf"></i> PDF Rinci</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="report-grid">
-                <div class="stat-box" style="border-left: 5px solid var(--primary);">
-                    <span>Total Pemasukan Bersih</span>
-                    <h3 id="reportTotalPemasukan" style="color: var(--primary);">Rp 0</h3>
-                </div>
-                <div class="stat-box" style="border-left: 5px solid var(--danger);">
-                    <span>Total Pengeluaran Operasional</span>
-                    <h3 id="reportTotalPengeluaran" style="color: var(--danger);">Rp 0</h3>
-                </div>
-                <div class="stat-box" style="border-left: 5px solid var(--blue);">
-                    <span>Saldo Akhir Kas (Profit)</span>
-                    <h3 id="reportSaldoAkhir" style="color: var(--blue);">Rp 0</h3>
-                </div>
-            </div>
-
-            <div class="admin-card">
-                <div class="card-title-area">
-                    <h2 style="font-size: 15px; font-weight: 600;"><i class="fa-solid fa-chart-area"></i> Tren Arus Kas Grafik Garis (Harian)</h2>
-                </div>
-                <div class="chart-container">
-                    <canvas id="financeLineChart"></canvas>
-                </div>
-            </div>
-
-            <div class="admin-card" style="border-top: 4px solid var(--purple);">
-                            <div class="card-title-area">
-                                <h2 style="font-size: 15px; font-weight: 600; color: var(--purple);"><i class="fa-solid fa-coins"></i> Rincian Omset Penjualan Harian (Khusus Pesanan Selesai)</h2>
-                            </div>
-                            <div class="omset-grid" id="omsetHarianContainer">
-                            </div>
-                        </div>
-
-                        <div class="admin-card">
-                            <div class="card-title-area">
-                                <h2 style="font-size: 15px; font-weight: 600;"><i class="fa-solid fa-money-bill-transfer"></i> Jurnal Arus Kas Terperinci</h2>
-                            </div>
-                            
-                            <div class="table-responsive" style="margin-top: 15px;">
-                                <table class="admin-table" style="width: 100%; border-collapse: collapse;">
-                                    <thead>
-                                        <tr style="background-color: #f8f9fa; text-align: left;">
-                                            <th style="padding: 10px; border-bottom: 2px solid #dee2e6; width: 15%;">Tanggal</th>
-                                            <th style="padding: 10px; border-bottom: 2px solid #dee2e6; width: 15%;">Jenis</th>
-                                            <th style="padding: 10px; border-bottom: 2px solid #dee2e6; width: 40%;">Keterangan / Deskripsi</th>
-                                            <th style="padding: 10px; border-bottom: 2px solid #dee2e6; width: 12%; color: #28a745;">Pemasukan</th>
-                                            <th style="padding: 10px; border-bottom: 2px solid #dee2e6; width: 12%; color: #dc3545;">Pengeluaran</th>
-                                            <th style="padding: 10px; border-bottom: 2px solid #dee2e6; width: 6%; text-align: center;">Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="financeTableBody">
-                                        <tr>
-                                            <td colspan="6" style="text-align: center; padding: 15px; color: var(--text-muted);">
-                                                Belum ada data jurnal keuangan.
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div> </div>
-                </div>
-
-    <div id="editModal" class="modal">
-        <div class="modal-content">
-            <h3 style="margin-bottom: 15px; font-size: 16px;"><i class="fa-solid fa-pen-to-square" style="color: var(--amber);"></i> Koreksi Data Pesanan Customer</h3>
-            <input type="hidden" id="editKey">
-            
-            <div class="form-group">
-                <label>Nama Customer</label>
-                <input type="text" id="editNama">
-            </div>
-            <div class="form-group">
-                <label>Nomor WhatsApp</label>
-                <input type="text" id="editNoHp">
-            </div>
-            <div class="form-group">
-                <label>Alamat Pengiriman Customer</label>
-                <textarea id="editAlamat" rows="2" placeholder="Masukkan alamat perubahan..."></textarea> </div>
-            <div class="form-group">
-                <label>Catatan Request Khusus</label>
-                <textarea id="editCatatan" rows="3"></textarea>
-            </div>
-            <div class="form-group">
-                <label>Total Harga Manual (Rp)</label>
-                <input type="number" id="editTotalBayar">
-            </div>
-
-            <div class="modal-buttons">
-                <button onclick="closeModal('editModal')" style="background: #e2e8f0; color: #475569; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:600; font-size:13px;">Batal</button>
-                <button onclick="simpanPerubahanPesanan()" style="background: var(--primary); color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:600; font-size:13px;">Simpan Perubahan</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="financeModal" class="modal">
-        <div class="modal-content">
-            <h3 style="margin-bottom: 15px; font-size: 16px;"><i class="fa-solid fa-wallet" style="color: var(--blue);"></i> Catat Keuangan Manual (Non-Cust)</h3>
-            
-            <div class="form-group">
-                <label>Jenis Transaksi</label>
-                <select id="finJenis">
-                    <option value="pemasukan_lain">Pemasukan (Contoh: Dana Awal, Suntikan Modal)</option>
-                    <option value="pengeluaran">Pengeluaran (Contoh: Bahan Baku Habis, Listrik, Gaji)</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Tanggal Transaksi</label>
-                <input type="date" id="finTanggal">
-            </div>
-            <div class="form-group">
-                <label>Keterangan / Deskripsi Penggunaan Dana</label>
-                <input type="text" id="finKeterangan" placeholder="Misal: Pembelian bahan baku habis">
-            </div>
-            <div class="form-group">
-                <label>Nominal Dana (Rp)</label>
-                <input type="number" id="finNominal" placeholder="Contoh: 100000">
-            </div>
-
-            <div class="modal-buttons">
-                <button onclick="closeModal('financeModal')" style="background: #e2e8f0; color: #475569; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:600; font-size:13px;">Batal</button>
-                <button onclick="simpanTransaksiManual()" style="background: var(--blue); color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:600; font-size:13px;">Simpan Transaksi</button>
-            </div>
-        </div>
-    </div>
-
-<footer class="main-footer-bottom" style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding: 20px 0; color: #64748b; font-size: 13px;">
-        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center;">
-            
-            <div style="display: flex; align-items: center; gap: 8px; font-weight: 600; color: #1e293b;">
-                <img src="image/LOGO_KITA.png" alt="KiTa Mini" style="height: 20px; width: auto; object-fit: contain;">
-                <span>KiTa PesanKeu</span>
-                <span style="background: #dcfce7; color: #16a34a; font-size: 10px; padding: 2px 8px; border-radius: 99px; font-weight: 500;">
-                    <i class="fa-solid fa-cloud" style="font-size: 9px; margin-right: 3px;"></i> Connected to Cloud
-                </span>
-            </div>
-
-            <p style="margin: 0;">&copy; 2026 <strong>KiTa PesanKeu</strong>. All Rights Reserved.</p>
-            
-            <p style="margin: 0; font-size: 11px; color: #94a3b8;">
-                Smart Order & Finance System for Employee Program & Local Business &bull; v2.4.0
-            </p>
-        </div>
-    </footer>    
-
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <script>
-        if (sessionStorage.getItem("adminLoggedIn") !== "true") {
-            alert("Akses Ditolak! Anda wajib melakukan login rahasia terlebih dahulu.");
-            window.location.href = "index.html";
-        }
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyAxxxxxxxxxxxxxxxxxxxxxx",
-            authDomain: "pesankeu-kita.firebaseapp.com",
-            databaseURL: "https://pesankeu-kita-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "pesankeu-kita",
-            storageBucket: "pesankeu-kita.appspot.com",
-            messagingSenderId: "xxxxxxxxxxxx",
-            appId: "1:xxxxxxxxxxxx:web:xxxxxxxxxxxx"
-        };
-
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-
-        let isInitialLoad = true;
-        let localOrdersCache = {}; 
-        let localFinanceCache = {};
-        let myLineChart = null; 
-
-        // Penampung data filter global untuk kebutuhan eksportir data
-        let totalPemasukanGlobal = 0;
-        let totalPengeluaranGlobal = 0;
-        let listPesananSelesaiGlobal = [];
-        let listTransaksiManualGlobal = [];
-
-        // KODE SINKRONISASI BULAN OTOMATIS BERJALAN SAAT AWAL LOAD
-        const tglSekarang = new Date();
-        let bulanSekarang = (tglSekarang.getMonth() + 1).toString();
-        if (bulanSekarang.length === 1) bulanSekarang = "0" + bulanSekarang;
-
-        document.getElementById('filterBulan').value = bulanSekarang;
-        document.getElementById('filterTahun').value = tglSekarang.getFullYear().toString();
-
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-            event.currentTarget.classList.add('active');
-            if(tabId === 'tab-keuangan') renderLaporanKeuangan();
-        }
-
-        // PARSER TANGGAL AGRESIF DAN CERDAS (Bisa baca semua jenis format database)
-        function bersihkanDanPecahTanggal(strTanggal) {
-            if (!strTanggal) return null;
-            
-            let str = strTanggal.toString().toLowerCase().trim();
-            
-            const mapBulan = {
-                'jan': '01', 'januari': '01', 'january': '01',
-                'feb': '02', 'februari': '02', 'february': '02',
-                'mar': '03', 'maret': '03', 'march': '03',
-                'apr': '04', 'april': '04',
-                'mei': '05', 'may': '05',
-                'jun': '06', 'juni': '06', 'june': '06',
-                'jul': '07', 'juli': '07', 'july': '07',
-                'agu': '08', 'agustus': '08', 'agust': '08', 'august': '08',
-                'sep': '09', 'september': '09', 'sept': '09',
-                'okt': '10', 'oktober': '10', 'oct': '10', 'october': '10',
-                'nov': '11', 'november': '11',
-                'des': '12', 'desember': '12', 'dec': '12', 'december': '12'
-            };
-
-            let tahun = "", bulan = "", hari = 0;
-            let kataBulanDitemukan = false;
-
-            for (let namaBulan in mapBulan) {
-                if (str.includes(namaBulan)) {
-                    bulan = mapBulan[namaBulan];
-                    kataBulanDitemukan = true;
-                    break;
-                }
-            }
-
-            let angkaMatches = str.match(/\d+/g);
-            if (!angkaMatches || angkaMatches.length < 2) return null;
-
-            if (kataBulanDitemukan) {
-                hari = parseInt(angkaMatches[0], 10);
-                let cariTahun = angkaMatches.find(num => num.length === 4);
-                tahun = cariTahun ? cariTahun : "2026"; 
-            } else {
-                if (angkaMatches[0].length === 4) {
-                    tahun = angkaMatches[0];
-                    bulan = angkaMatches[1];
-                    hari = parseInt(angkaMatches[2], 10);
-                } else {
-                    hari = parseInt(angkaMatches[0], 10);
-                    bulan = angkaMatches[1];
-                    tahun = angkaMatches[2] && angkaMatches[2].length === 4 ? angkaMatches[2] : "2026";
-                }
-            }
-
-            if (bulan.length === 1) bulan = "0" + bulan;
-
-            return { tahun, bulan, hari };
-        }
+// KAMUS HARGA OTOMATIS: Penyelamat jika data keranjang dari pembeli kosong harganya
+const daftarHargaMenu = {
+    "Lumpia Beef": 15000,
+    "LUMPIA BEEF": 15000,
+    "Banana Roll (Isi 8 Pcs)": 10000,
+    "Banana Roll (Isi 6 Pcs)": 7000,
+    "Banana Crispy (Isi 12 Pcs)": 12000,
+    "Banana Crispy (Isi 5 Pcs)": 6000
+};
 
 // =========================================================================
-// DATABASE REALTIME - ANTRIAN PESANAN + NOTIFIKASI VISUAL & SUARA (9 KOLOM NYATA)
+// 2. INITIALIZATION / KETIKA HALAMAN SELESAI DIMUAT
 // =========================================================================
-database.ref('pesanan').on('value', (snapshot) => {
-    const tableBody = document.getElementById('adminTableBody');
-    if (!tableBody) return;
-    
-    tableBody.innerHTML = ""; // Bersihkan tabel sebelum mengisi ulang
-    const data = snapshot.val();
-    // --- RENDER TABEL (Logika Baru agar Nomor Urut Stabil) ---
+document.addEventListener("DOMContentLoaded", () => {
+    const filterBulan = document.getElementById('filterBulan');
+    const filterTahun = document.getElementById('filterTahun');
 
-    localOrdersCache = data || {};
-    if (!data) { /* ... handle kosong ... */ return; }
-    
-    // 1. Ubah data menjadi array agar bisa diurutkan
-    const orderList = Object.keys(data).map(key => ({
-        key: key,
-        ...data[key]
-    }));
-
-    // 2. Urutkan berdasarkan tanggal (pesanan lama ke atas)
-    // Asumsi: format 'order.tanggal' bisa di-sort (contoh: DD-MM-YYYY HH:mm:ss)
-    // Jika tanggal tidak bisa di-sort, tambahkan 'timestamp' di database saat pesan
-    orderList.sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
-
-    // 3. Render ke tabel
-    orderList.forEach((order, index) => {
-        const key = order.key; // Ambil key yang sudah kita simpan tadi
-        
-        let itemsLi = "";
-        let waItemsText = "";
-        
-        // Proses Menu (sama seperti sebelumnya)
-        const daftarMenu = order.menu_order || order.item_keranjang;
-        if (daftarMenu && Array.isArray(daftarMenu)) {
-            daftarMenu.forEach(item => {
-                const sub = (Number(item.harga) || 0) * (Number(item.qty) || 1);
-                itemsLi += `<li><strong>${item.menu}</strong> (${item.qty}x) - Rp ${sub.toLocaleString('id-ID')}</li>`;
-                waItemsText += `- ${item.menu} (${item.qty}x) - Rp ${sub.toLocaleString('id-ID')}\n`;
-            });
-        } else {
-            itemsLi = "<li>-</li>";
-        }
-
-        const statusClass = order.status === "selesai" ? "badge-selesai" : (order.status === "diproses" ? "badge-diproses" : "badge-pending");
-
-        let textWA = `Halo Kak *${order.nama}*,\n\nTerima kasih telah memesan di *KiTa PesanKeu*! 🙏\n\n` +
-                     `Kami ingin mengonfirmasi rincian pesanan Kakak:\n\n*Detail Pesanan:*\n${waItemsText}\n` +
-                     `*Total Tagihan:* Rp ${Number(order.total_bayar).toLocaleString('id-ID')}\n\n` +
-                     `Mohon konfirmasinya ya Kak. Terima kasih!`;
-        
-        let urlWA = `https://api.whatsapp.com/send?phone=${formatNoHp(order.no_hp)}&text=${encodeURIComponent(textWA)}`;
-
-        // Buat Baris
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td style="text-align: center;">${String(index + 1).padStart(3, '0')}</td>
-            <td style="white-space: nowrap;">${order.tanggal || '-'}</td>
-            <td><strong>${order.nama || '-'}</strong></td>
-            <td>${order.no_hp || '-'}</td>
-            <td>${order.alamat || '-'}</td> 
-            <td><ul class="table-item-list">${itemsLi}</ul></td>
-            <td style="color: var(--amber);">${order.catatan || '-'}</td>
-            <td style="font-weight: 700;">Rp ${Number(order.total_bayar || 0).toLocaleString('id-ID')}</td>
-            <td><span class="badge ${statusClass}">${(order.status || 'pending').toUpperCase()}</span></td>
-            <td>
-                <div class="action-group">
-                    <button class="btn-action btn-process" onclick="updateStatus('${key}', 'diproses')">Proses</button>
-                    <button class="btn-action btn-done" onclick="updateStatus('${key}', 'selesai')">Selesai</button>
-                    <button class="btn-action btn-edit" onclick="openEditModal('${key}')">Edit</button>
-                    <a href="${urlWA}" target="_blank" style="text-decoration: none;">
-                        <button class="btn-action btn-wa" style="background-color: #25d366; color: white;">Chat WA</button>
-                    </a>
-                    <button class="btn-action btn-delete" onclick="hapusPesanan('${key}')">Hapus</button>
-                </div>
-            </td>
-        `;
-        tableBody.appendChild(tr);
-    });
-
-    isInitialLoad = false;
-    if (typeof renderLaporanKeuangan === "function") renderLaporanKeuangan();
+    if (filterBulan) filterBulan.addEventListener('change', jalankanRenderSesuaiTab);
+    if (filterTahun) filterTahun.addEventListener('change', jalankanRenderSesuaiTab);
 });
 
-// =========================================================================
-// FUNGSI PEMBUAT POP-UP NOTIFIKASI VISUAL DYNAMIC
-// =========================================================================
-function buatNotifikasiPopupVisual(namaPembeli, totalBayar) {
-    // Cek atau buat container notifikasi di pojok kanan atas layar jika belum ada
-    let container = document.getElementById('notif-container-box');
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'notif-container-box';
-        container.style.cssText = "position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; max-width: 350px;";
-        document.body.appendChild(container);
-    }
-
-    // Elemen Box Notifikasi
-    const box = document.createElement('div');
-    box.style.cssText = "background: #ffffff; color: #1e293b; padding: 16px; border-radius: 10px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1); border-left: 5px solid #2ecc71; display: flex; align-items: start; gap: 12px; animation: slideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);";
-
-    box.innerHTML = `
-        <div style="background: #dcfce7; color: #16a34a; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-            <i class="fa-solid fa-bell-on fa-lg" class="fa-bounce"></i>
-        </div>
-        <div style="flex-grow: 1;">
-            <h4 style="margin: 0 0 2px 0; font-size: 13px; font-weight: 700; text-transform: uppercase; color: #16a34a;">Pesanan Baru Masuk!</h4>
-            <p style="margin: 0; font-size: 12px; color: #475569;">Pelanggan: <strong>${namaPembeli}</strong></p>
-            <p style="margin: 2px 0 0 0; font-size: 12px; font-weight: 600; color: #2ecc71;">Total: Rp ${Number(totalBayar).toLocaleString('id-ID')}</p>
-        </div>
-    `;
-
-    container.appendChild(box);
-
-    // Tambahkan animasi keyframe CSS untuk efek slide-in ke dokumen secara otomatis
-    if (!document.getElementById('style-notif-anim')) {
-        const style = document.createElement('style');
-        style.id = 'style-notif-anim';
-        style.innerHTML = `
-            @keyframes slideIn {
-                from { opacity: 0; transform: translateX(50px); }
-                to { opacity: 1; transform: translateX(0); }
-            }
-            @keyframes fadeOut {
-                to { opacity: 0; transform: translateY(-20px); }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-
-    // Hapus otomatis pop-up setelah 5 detik agar layar tidak penuh
-    setTimeout(() => {
-        box.style.animation = "fadeOut 0.4s ease forwards";
-        setTimeout(() => { box.remove(); }, 400);
-    }, 5000);
+function jalankanRenderSesuaiTab() {
+    renderOrdersTable();
+    renderLaporanKeuangan();
 }
 
-        // DATABASE REALTIME - TRANSAKSI MANUAL
-        database.ref('keuangan_manual').on('value', (snapshot) => {
-            localFinanceCache = snapshot.val() || {};
-            renderLaporanKeuangan();
-        });
-
-        function updateStatus(key, status) {
-            database.ref('pesanan/' + key).update({ status: status });
+function bersihkanDanPecahTanggal(teksTanggal) {
+    if (!teksTanggal) return null;
+    try {
+        const hanyaTanggal = teksTanggal.split(',')[0].trim(); 
+        const part = hanyaTanggal.split('-'); 
+        if (part.length === 3) {
+            return {
+                hari: parseInt(part[0], 10),
+                bulan: part[1], 
+                tahun: part[2]  
+            };
         }
+    } catch (e) {
+        console.error("Gagal memecah tanggal:", e);
+    }
+    return null;
+}
 
-        function hapusPesanan(key) {
-            if (confirm("Hapus data pesanan ini secara permanen dari server cloud?")) {
-                database.ref('pesanan/' + key).remove();
-            }
+// 🌟 FUNGSI SCANNER CERDAS UNTUK MENGHITUNG TEKS MENTAH DARI FIREBASE KAKAK
+function hitungOtomatisHargaTeksMentah(namaMenuTeks, kustomisasiTeks) {
+    let hargaDasar = 0;
+    let qty = 1;
+
+    // 1. Cari kecocokan nama menu di dalam kamus harga
+    Object.keys(daftarHargaMenu).forEach(namaMenuKamus => {
+        if (namaMenuTeks.toLowerCase().includes(namaMenuKamus.toLowerCase())) {
+            hargaDasar = daftarHargaMenu[namaMenuKamus];
         }
+    });
 
-        function openEditModal(key) {
-            console.log("Mencoba membuka modal untuk:", key);
-            
-            const order = localOrdersCache[key];
-            const modal = document.getElementById('editModal');
-            
-            if (!order) {
-                alert("Data pesanan tidak ditemukan!");
-                return;
-            }
-            
-            if (!modal) {
-                alert("Elemen modal dengan id 'editModal' tidak ditemukan di HTML!");
-                return;
-            }
+    // 2. Scan Qty (Mencari pola seperti (1x), (2x), dst)
+    const matchQty = namaMenuTeks.match(/\((\d+)x\)/);
+    if (matchQty && matchQty[1]) {
+        qty = parseInt(matchQty[1], 10);
+    }
 
-            // Isi data
-            document.getElementById('editKey').value = key;
-            document.getElementById('editNama').value = order.nama || "";
-            document.getElementById('editNoHp').value = order.no_hp || "";
-            document.getElementById('editAlamat').value = order.alamat || "";
-            document.getElementById('editCatatan').value = order.catatan || "";
-            document.getElementById('editTotalBayar').value = order.total_bayar || 0;
+    // 3. Scan Kustomisasi / Topping tambahan biaya
+    let totalHargaSatuan = hargaDasar + biayaKustomisasi;
 
-            // Munculkan modal
-            modal.style.display = "flex";
-        }
+    return totalHargaSatuan * qty;
+}
 
-        function openFinanceModal() {
-            // 1. Set otomatis tanggal hari ini ke kolom input
-            if (document.getElementById('finTanggal')) {
-                document.getElementById('finTanggal').value = new Date().toISOString().split('T')[0];
-            }
-            
-            // 2. Bersihkan sisa teks ketikan yang lama
-            if (document.getElementById('finKeterangan')) document.getElementById('finKeterangan').value = "";
-            if (document.getElementById('finNominal')) document.getElementById('finNominal').value = "";
-            
-            // 3. ✅ SINKRONISASI: Ubah "flex" menjadi "block" agar posisi modal presisi di tengah layar
-            if (document.getElementById('financeModal')) {
-                document.getElementById('financeModal').style.display = "block";
-            }
-        }
+// =========================================================================
+// 3. FUNGSI UTAMA A: RENDER LOG ANTREAN (UNTUK STATUS PENDING / PROSES)
+// =========================================================================
+function renderOrdersTable() {
+    const adminTableBody = document.getElementById('adminTableBody');
+    if (!adminTableBody) return;
+    
+    // 1. Kosongkan tabel terlebih dahulu
+    adminTableBody.innerHTML = "";
 
-        function closeModal(modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                modal.style.display = "none";
-            }
-        }
+    // 2. Loop data yang ingin ditampilkan (gunakan `localOrdersCache` sebagai sumber data)
+    Object.keys(localOrdersCache).forEach((key, index) => {
+        const order = localOrdersCache[key];   
+        
+        // Rincian menu disiapkan di sini agar rapi
+        const rincianMenuHTML = `
+            <div style="white-space: pre-line; font-size: 13px; color: #334155;">
+                ${order.menu_order || '-'}
+            </div>
+        `;
 
-        function simpanPerubahanPesanan() {
-            const key = document.getElementById('editKey').value;
-            
-            // TAMBAHAN: Mengambil data alamat dari input modal edit
-            const alamatBaru = document.getElementById('editAlamat').value.trim();
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style="text-align: center;"><strong>${String(index + 1).padStart(3, '0')}</strong></td>
+            <td><small>${order.tanggal || '-'}</small></td>
+            <td><strong>${order.nama || '-'}</strong></td>
+            <td>${order.no_hp || '-'}</td>
+            <td>${order.alamat || '-'}</td>
+            <td style="vertical-align: top;">${rincianMenuHTML}</td>
+            <td><small style="color:#b45309;">${order.catatan || '-'}</small></td>
+            <td style="font-weight: bold; color: #16a34a;">Rp ${(Number(order.total_bayar) || 0).toLocaleString('id-ID')}</td>
+            <td>
+                <span class="badge" style="background-color: ${order.status === 'PENDING' ? '#f59e0b' : '#3b82f6'}; color: white; padding: 4px 8px; border-radius: 4px;">
+                    ${(order.status || 'PENDING').toUpperCase()}
+                </span>
+            </td>
+            <td style="text-align: center;">
+                <button onclick="ubahStatusSelesai('${key}')" style="background:#16a34a; color:white; border:none; padding:5px 10px; cursor:pointer;">✔ Selesai</button>
+            </td>
+        `;
+        adminTableBody.appendChild(tr);
+    });
+}
 
-            database.ref('pesanan/' + key).update({
-                nama: document.getElementById('editNama').value.trim(),
-                no_hp: document.getElementById('editNoHp').value.trim(),
-                alamat: alamatBaru, // TAMBAHAN: Ikut mengupdate alamat di Firebase
-                catatan: document.getElementById('editCatatan').value.trim(),
-                total_bayar: Number(document.getElementById('editTotalBayar').value)
-            }).then(() => { 
-                closeModal('editModal'); 
-                alert("Data pesanan berhasil dikoreksi!"); 
-            }).catch((error) => {
-                console.error("Gagal mengupdate data:", error);
-                alert("Gagal menyimpan perubahan.");
-            });
-        }
-
-        function simpanTransaksiManual() {
-            const jenis = document.getElementById('finJenis').value;
-            const tanggal = document.getElementById('finTanggal').value;
-            const keterangan = document.getElementById('finKeterangan').value.trim();
-            const nominal = Number(document.getElementById('finNominal').value);
-
-            if (!tanggal || !keterangan || nominal <= 0) {
-                alert("Semua data wajib diisi dengan valid!");
-                return;
-            }
-
-            database.ref('keuangan_manual').push().set({
-                jenis: jenis,
-                tanggal: tanggal,
-                keterangan: keterangan,
-                nominal: nominal
-            })
-            .then(() => { 
-                // 1. Munculkan alert sukses terlebih dahulu
-                alert("Transaksi keuangan manual berhasil disimpan!"); 
-                
-                // 2. Tutup modal keuangan
-                closeModal('financeModal'); 
-                
-                // 3. Tambahan: Kosongkan kembali form input agar bersih saat dibuka lagi nanti
-                document.getElementById('finKeterangan').value = "";
-                document.getElementById('finNominal').value = "";
-                
-                // 4. Tambahan (Opsional): Panggil fungsi refresh laporan jika ada
-                if (typeof renderLaporanKeuangan === "function") {
-                    renderLaporanKeuangan();
-                }
-            })
-            .catch((error) => {
-                console.error("Gagal menyimpan transaksi manual: ", error);
-                alert("Terjadi kesalahan sistem, gagal menyimpan data.");
-            });
-        }
-
-        function hapusTransaksiManual(key) {
-            if (confirm("Hapus arsip transaksi manual ini?")) {
-                database.ref('keuangan_manual/' + key).remove();
-            }
-        }
-
-        // LOGIKA UTAMA: PENYARINGAN FILTER & ARUS KAS INTEGRASI TABLET PEMBUKUAN
+// =========================================================================
+// 4. FUNGSI UTAMA B: RENDER JURNAL LAPORAN KEUANGAN & PEMBUKUAN (SELESAI)
+// =========================================================================
 function renderLaporanKeuangan() {
-    const filterBulan = document.getElementById('filterBulan').value;
-    const filterTahun = document.getElementById('filterTahun').value;
+    const filterBulan = document.getElementById('filterBulan') ? document.getElementById('filterBulan').value : 'all';
+    const filterTahun = document.getElementById('filterTahun') ? document.getElementById('filterTahun').value : '2026';
     const financeTableBody = document.getElementById('financeTableBody');
     const omsetHarianContainer = document.getElementById('omsetHarianContainer');
     
-    // Katup Pengaman: Mencegah eror jika elemen HTML belum siap di DOM
-    if (!financeTableBody || !omsetHarianContainer) {
-        console.warn("Wadah tabel keuangan atau omset harian belum siap di HTML.");
-        return; 
-    }
+    if (!financeTableBody || !omsetHarianContainer) return; 
 
-    // Reset tampilan awal wadah
     financeTableBody.innerHTML = "";
     omsetHarianContainer.innerHTML = "";
 
-    // Reset variabel global pembukuan
     totalPemasukanGlobal = 0;
     totalPengeluaranGlobal = 0;
     listPesananSelesaiGlobal = [];
@@ -789,45 +147,65 @@ function renderLaporanKeuangan() {
     let chartDataPengeluaran = new Array(31).fill(0);
     let omsetMurniCustHarian = new Array(31).fill(0);
 
-    // Siapkan label diagram dari Tanggal 1 - 31
     for(let i = 1; i <= 31; i++) chartLabels.push("Tgl " + i);
 
     const tglSistem = new Date();
     const tahunSistem = tglSistem.getFullYear().toString();
     const batasBulanMaksimal = (filterTahun === tahunSistem) ? (tglSistem.getMonth() + 1) : 12;
 
-    // =========================================================================
-    // A. Pemrosesan Otomatis Data Pesanan Berstatus Selesai (Dari Cloud)
-    // =========================================================================
+    // DATA AUTOMATIC (PESANAN CUSTOMER STATUS SELESAI)
     Object.keys(localOrdersCache).forEach(key => {
         const order = localOrdersCache[key];
         
-        // Validasi ketat: Hanya menarik pesanan yang berstatus 'selesai'
         if (order.status === "selesai" && order.tanggal) {
             const infoTgl = bersihkanDanPecahTanggal(order.tanggal);
             
             if (infoTgl) {
-                // Filter berdasarkan Tahun dan Bulan yang sedang aktif dipilih user
                 if (infoTgl.tahun === filterTahun && (filterBulan === 'all' || infoTgl.bulan === filterBulan)) {
                     
-                    const targetMenu = order.menu_order || order.item_keranjang || [];
-                    
-                    // 🌟 1. PEMBUATAN TEKS RINCIAN UNTUK DATA KAS / ARSIP PDF
+                    let targetMenu = order.menu_order || order.item_keranjang || [];
+                    if (targetMenu && typeof targetMenu === 'object' && !Array.isArray(targetMenu)) {
+                        targetMenu = Object.keys(targetMenu).map(k => targetMenu[k]);
+                    }
+
+                    let rincianMenuHTMLAdmin = `<div style="margin-bottom: 5px; font-weight: bold; color: #1e293b;">Pesanan Selesai an. ${order.nama}</div>`;
                     let arrayRincianTeks = [];
-                    targetMenu.forEach(item => {
-                        // INI BAGIAN UTAMANYA:
-                        const hargaSatuan = Number(item.harga) || 0;
-                        const qty = Number(item.qty) || 1;
-                        const subtotalMenu = item.subtotal ? Number(item.subtotal) : (hargaSatuan * qty);
-                        
-                        // Baris di bawah ini yang menentukan format tulisan di kolom keterangan
-                        arrayRincianTeks.push(`${item.menu} (${qty}x) [@Rp ${hargaSatuan.toLocaleString('id-ID')} -> Rp ${subtotalMenu.toLocaleString('id-ID')}]`);
-                    });
+
+                    if (Array.isArray(targetMenu) && targetMenu.length > 0) {
+                        targetMenu.forEach(item => {
+                            let teksMenu = "";
+                            let teksKustom = "";
+
+                            if (typeof item === 'string') {
+                                teksMenu = item;
+                                teksKustom = "-";
+                            } else {
+                                teksMenu = item.menu || "";
+                                teksKustom = item.kustomisasi || item.topping || item.rasa || "-";
+                            }
+
+                            if (!teksMenu) return;
+
+                            const totalHargaItem = hitungOtomatisHargaTeksMentah(teksMenu, teksKustom);
+                            arrayRincianTeks.push(teksMenu);
+
+                            rincianMenuHTMLAdmin += `
+                                <div style="font-size: 11px; color: #475569; margin-left: 5px; border-left: 2px solid #cbd5e1; padding-left: 5px; margin-top: 4px;">
+                                    ➔ ${teksMenu}
+                                    <br>
+                                    <span style="color: #64748b;">Total Harga: </span><strong style="color: #0f766e;">Rp ${totalHargaItem.toLocaleString('id-ID')}</strong>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    if (!arrayRincianTeks.length && typeof order.menu_order === 'string') {
+                        rincianMenuHTMLAdmin = `<div style="font-weight: bold; color: #1e293b;">Pesanan Selesai an. ${order.nama}</div><div style="font-size:11px; color:#475569;">${order.menu_order}</div>`;
+                    }
 
                     let rincianMenuTeks = arrayRincianTeks.length > 0 ? arrayRincianTeks.join(", ") : "Menu tidak terinci";
                     let nominalVal = Number(order.total_bayar) || 0;
 
-                    // Format objek data khusus arsip eksportir Pesanan Cust (PDF)
                     let itemData = {
                         tanggal: order.tanggal,
                         nama: order.nama,
@@ -835,13 +213,12 @@ function renderLaporanKeuangan() {
                         pemasukan: nominalVal
                     };
                     
-                    // Masukkan ke array gabungan pembukuan tabel utama (Untuk di-render di tabel)
                     gabunganArusKas.push({
                         isManual: false, 
                         key: key, 
                         tanggal: order.tanggal,
                         kategori: "Pesanan Cust", 
-                        keterangan: itemData.keterangan,
+                        keterangan: rincianMenuHTMLAdmin, 
                         pemasukan: nominalVal, 
                         pengeluaran: 0
                     });
@@ -849,7 +226,6 @@ function renderLaporanKeuangan() {
                     listPesananSelesaiGlobal.push(itemData);
                     totalPemasukanGlobal += nominalVal;
                     
-                    // Plotting grafik & grid omset harian
                     if(infoTgl.hari >= 1 && infoTgl.hari <= 31) {
                         chartDataPemasukan[infoTgl.hari - 1] += nominalVal;
                         omsetMurniCustHarian[infoTgl.hari - 1] += nominalVal;
@@ -859,67 +235,48 @@ function renderLaporanKeuangan() {
         }
     });
 
-    // =========================================================================
-    // B. Pemrosesan Data Keuangan Manual (Pemasukan & Pengeluaran Tambahan)
-    // =========================================================================
+    // DATA MANUAL (PENGELUARAN & PEMASUKAN LAIN)
     Object.keys(localFinanceCache).forEach(key => {
         const f = localFinanceCache[key];
         if (f.tanggal) {
             const infoTgl = bersihkanDanPecahTanggal(f.tanggal);
+            if (infoTgl && infoTgl.tahun === filterTahun) {
+                let lolosFilter = false;
+                if (filterBulan === 'all') {
+                    if (parseInt(infoTgl.bulan, 10) <= batasBulanMaksimal) lolosFilter = true;
+                } else {
+                    if (infoTgl.bulan === filterBulan) lolosFilter = true;
+                }
 
-            if (infoTgl) {
-                if (infoTgl.tahun === filterTahun) {
-                    let lolosFilter = false;
-                    if (filterBulan === 'all') {
-                        if (parseInt(infoTgl.bulan, 10) <= batasBulanMaksimal) lolosFilter = true;
+                if (lolosFilter) {
+                    let pem = 0; let peng = 0; let kat = "Pengeluaran";
+                    let nominalVal = Number(f.nominal) || 0;
+
+                    if (f.jenis === 'pemasukan_lain') {
+                        pem = nominalVal; kat = "Dana Masuk"; totalPemasukanGlobal += pem;
+                        if(infoTgl.hari >= 1 && infoTgl.hari <= 31) chartDataPemasukan[infoTgl.hari - 1] += nominalVal;
                     } else {
-                        if (infoTgl.bulan === filterBulan) lolosFilter = true;
+                        peng = nominalVal; totalPengeluaranGlobal += peng;
+                        if(infoTgl.hari >= 1 && infoTgl.hari <= 31) chartDataPengeluaran[infoTgl.hari - 1] += nominalVal;
                     }
 
-                    if (lolosFilter) {
-                        let pem = 0; let peng = 0; let kat = "Pengeluaran";
-                        let nominalVal = Number(f.nominal) || 0;
+                    gabunganArusKas.push({
+                        isManual: true, key: key, tanggal: f.tanggal,
+                        kategori: kat, keterangan: `<span style="font-weight:600; color:#1e293b;">${f.keterangan}</span>`, pemasukan: pem, pengeluaran: peng
+                    });
 
-                        if (f.jenis === 'pemasukan_lain') {
-                            pem = nominalVal; 
-                            kat = "Dana Masuk"; 
-                            totalPemasukanGlobal += pem;
-                            if(infoTgl.hari >= 1 && infoTgl.hari <= 31) chartDataPemasukan[infoTgl.hari - 1] += nominalVal;
-                        } else {
-                            peng = nominalVal; 
-                            totalPengeluaranGlobal += peng;
-                            if(infoTgl.hari >= 1 && infoTgl.hari <= 31) chartDataPengeluaran[infoTgl.hari - 1] += nominalVal;
-                        }
-
-                        gabunganArusKas.push({
-                            isManual: true, 
-                            key: key, 
-                            tanggal: f.tanggal,
-                            kategori: kat, 
-                            keterangan: f.keterangan, 
-                            pemasukan: pem, 
-                            pengeluaran: peng
-                        });
-
-                        listTransaksiManualGlobal.push({
-                            tanggal: f.tanggal, 
-                            kategori: kat, 
-                            keterangan: f.keterangan, 
-                            pemasukan: pem, 
-                            pengeluaran: peng
-                        });
-                    }
+                    listTransaksiManualGlobal.push({
+                        tanggal: f.tanggal, kategori: kat, keterangan: f.keterangan, pemasukan: pem, pengeluaran: peng
+                    });
                 }
             }
         }
     });
 
-    // Urutkan seluruh arus kas gabungan berdasarkan tanggal terbaru (descending)
+    // Sortir Arus Kas Tanggal Terbaru ke Terlama
     gabunganArusKas.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
 
-    // =========================================================================
-    // C. Pengisian Box Omset Grid Harian (Kalender Visual Mini)
-    // =========================================================================
+    // Render Kalender Grid Visual Mini
     if(filterBulan === 'all') {
         omsetHarianContainer.innerHTML = `<p style="grid-column: 1/-1; text-align: center; font-size:13px; color: var(--text-muted); padding:10px;">Pilih satu bulan spesifik untuk melihat rincian pemetaan omset harian.</p>`;
     } else {
@@ -938,9 +295,7 @@ function renderLaporanKeuangan() {
         });
     }
 
-    // =========================================================================
-    // D. Injeksi Elemen Baris Data ke Tabel HTML Jurnal Keuangan Utama
-    // =========================================================================
+    // Injeksi Baris Data ke Tabel HTML Jurnal Keuangan Utama
     if (gabunganArusKas.length === 0) {
         financeTableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">Tidak ada rekaman aktivitas keuangan pada periode ini.</td></tr>`;
     } else {
@@ -949,12 +304,12 @@ function renderLaporanKeuangan() {
             const badgeClass = item.pemasukan > 0 ? "badge-pemasukan" : "badge-pengeluaran";
             
             tr.innerHTML = `
-                <td style="white-space:nowrap;"><small>${item.tanggal}</small></td>
-                <td><span class="badge ${badgeClass}">${item.kategori}</span></td>
-                <td><strong>${item.keterangan}</strong></td>
-                <td style="text-align:right; color:#16a34a; font-weight:600;">${item.pemasukan > 0 ? 'Rp ' + item.pemasukan.toLocaleString('id-ID') : '-'}</td>
-                <td style="text-align:right; color:#dc2626; font-weight:600;">${item.pengeluaran > 0 ? 'Rp ' + item.pengeluaran.toLocaleString('id-ID') : '-'}</td>
-                <td style="text-align:center;">
+                <td style="white-space:nowrap; vertical-align: top;"><small>${item.tanggal}</small></td>
+                <td style="vertical-align: top;"><span class="badge ${badgeClass}">${item.kategori.toUpperCase()}</span></td>
+                <td style="vertical-align: top; text-align: left;">${item.keterangan}</td>
+                <td style="text-align:right; color:#16a34a; font-weight:600; vertical-align: top;">${item.pemasukan > 0 ? 'Rp ' + item.pemasukan.toLocaleString('id-ID') : '-'}</td>
+                <td style="text-align:right; color:#dc2626; font-weight:600; vertical-align: top;">${item.pengeluaran > 0 ? 'Rp ' + item.pengeluaran.toLocaleString('id-ID') : '-'}</td>
+                <td style="text-align:center; vertical-align: top;">
                     ${item.isManual 
                         ? `<button class="btn-action btn-delete" style="padding:4px 8px; display:inline-block; background:none; border:none; cursor:pointer;" onclick="hapusTransaksiManual('${item.key}')"><i class="fa-solid fa-trash" style="color:#dc2626;"></i></button>` 
                         : `<span style="color:var(--text-muted); font-size:11px; font-style:italic;"><i class="fa-solid fa-robot"></i> Auto Terintegrasi</span>`}
@@ -964,9 +319,7 @@ function renderLaporanKeuangan() {
         });
     }
 
-    // =========================================================================
-    // E. Sinkronisasi Angka Akhir Ke Widget Ringkasan Card Atas
-    // =========================================================================
+    // Sinkronisasi Angka Akhir Ke Widget Card Atas
     if (document.getElementById('reportTotalPemasukan')) {
         document.getElementById('reportTotalPemasukan').innerText = "Rp " + totalPemasukanGlobal.toLocaleString('id-ID');
     }
@@ -981,15 +334,10 @@ function renderLaporanKeuangan() {
         saldoEl.style.color = saldoAkhir >= 0 ? "var(--blue)" : "var(--danger)";
     }
 
-    // =========================================================================
-    // F. Render Grafik Tren Garis Kontinuitas Keuangan (Chart.js)
-    // =========================================================================
-    if (typeof myLineChart !== 'undefined' && myLineChart) { 
-        myLineChart.destroy(); 
-    }
-    
+    // Gambar Ulang Grafik Garis Chart.js
     const canvasChart = document.getElementById('financeLineChart');
     if (canvasChart) {
+        if (myLineChart) { myLineChart.destroy(); }
         const ctx = canvasChart.getContext('2d');
         myLineChart = new Chart(ctx, {
             type: 'line',
@@ -1021,194 +369,9 @@ function renderLaporanKeuangan() {
                 maintainAspectRatio: false,
                 plugins: { legend: { position: 'top' } },
                 scales: {
-                    y: { 
-                        beginAtZero: true, 
-                        ticks: { 
-                            callback: function(value) { return 'Rp ' + value.toLocaleString('id-ID'); } 
-                        } 
-                    }
+                    y: { beginAtZero: true, ticks: { callback: function(value) { return 'Rp ' + value.toLocaleString('id-ID'); } } }
                 }
             }
         });
     }
 }
-
-        // ==========================================
-        // FITUR EKSPOR PDF PROFESIONAL DENGAN DATA TERPISAH & BER-NOMOR
-        // ==========================================
-        function exportKePDF() {
-            if (listPesananSelesaiGlobal.length === 0 && listTransaksiManualGlobal.length === 0) { 
-                alert("Tidak ada data pembukuan untuk periode ini!"); 
-                return; 
-            }
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('p', 'mm', 'a4');
-            
-            const skrg = new Date();
-            const stringWaktuCetak = skrg.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) + " - Jam " + skrg.toLocaleTimeString('id-ID') + " WIB";
-
-            doc.setFont("Helvetica", "bold");
-            doc.setFontSize(16);
-            doc.setTextColor(30, 41, 59);
-            doc.text("LAPORAN ARUS KAS PEMBUKUAN - KITA PESANKEU", 14, 15);
-            
-            // FORMAT RINGKAS BULAN BERJALAN MM/YYYY ATAU JAN-BULAN INI
-            const bulanAngka = document.getElementById('filterBulan').value;
-            const tahunAngka = document.getElementById('filterTahun').value;
-            let formatPeriodeRingkas = "";
-
-            if (bulanAngka === 'all') {
-                let bulanMaks = (skrg.getMonth() + 1).toString();
-                if (bulanMaks.length === 1) bulanMaks = "0" + bulanMaks;
-                formatPeriodeRingkas = (tahunAngka === skrg.getFullYear().toString()) 
-                    ? `01/${tahunAngka} - ${bulanMaks}/${tahunAngka}` 
-                    : `01/${tahunAngka} - 12/${tahunAngka}`;
-            } else {
-                formatPeriodeRingkas = `${bulanAngka}/${tahunAngka}`;
-            }
-
-            doc.setFontSize(9);
-            doc.setFont("Helvetica", "normal");
-            doc.text(`Periode Laporan : ${formatPeriodeRingkas}`, 14, 21);
-            
-            doc.setFont("Helvetica", "oblique");
-            doc.setTextColor(100, 116, 139);
-            doc.text(`Waktu Eksport Data : ${stringWaktuCetak}`, 14, 26);
-            
-            doc.setDrawColor(46, 204, 113);
-            doc.setLineWidth(0.6);
-            doc.line(14, 29, 196, 29); 
-
-            doc.setFont("Helvetica", "bold");
-            doc.setFontSize(10);
-            doc.setTextColor(30, 41, 59);
-            doc.text("IKHTISAR RINGKASAN SALDO PERIODE INI:", 14, 37);
-            
-            // =========================================================================
-            // 🌟 PERBAIKAN UTAMA: Penyelarasan Titik Dua (:) Menggunakan Kunci Sumbu X
-            // =========================================================================
-            
-            // 1. Baris Total Pemasukan Bersih
-            doc.setFont("Helvetica", "normal");
-            doc.text("• Total Pemasukan Bersih", 16, 43); // Teks mulai di X = 16
-            doc.text(":", 75, 43);                      // Titik dua dikunci di X = 75 🌟
-            doc.text(`Rp ${totalPemasukanGlobal.toLocaleString('id-ID')}`, 79, 43); // Angka mulai di X = 79
-
-            // 2. Baris Total Pengeluaran Operasional
-            doc.text("• Total Pengeluaran Operasional", 16, 49);
-            doc.text(":", 75, 49);                      // Titik dua dikunci di X = 75 🌟
-            doc.text(`Rp ${totalPengeluaranGlobal.toLocaleString('id-ID')}`, 79, 49);
-
-            // 3. Baris Saldo Akhir Bersih (Profit Kas)
-            doc.setFont("Helvetica", "bold"); // Dipertebal agar kontras
-            doc.text("• Saldo Akhir Bersih (Profit Kas)", 16, 55);
-            doc.text(":", 75, 55);                      // Titik dua dikunci di X = 75 🌟
-            doc.text(`Rp ${(totalPemasukanGlobal - totalPengeluaranGlobal).toLocaleString('id-ID')}`, 79, 55);
-
-            let posisiY_Sekarang = 63;
-
-            // BAGIAN TERPISAH 1: DATA PESANAN CUST BER-NOMOR OBJEKTIF
-            doc.setFont("Helvetica", "bold");
-            doc.setFontSize(11);
-            doc.setTextColor(41, 128, 185);
-            doc.text("BAGIAN 1: DATA RINCIAN PESANAN CUSTOMER (CLOUD)", 14, posisiY_Sekarang);
-            
-            const barisTabelPesanan = [];
-            listPesananSelesaiGlobal.forEach((p, index) => {
-                barisTabelPesanan.push([(index + 1), p.tanggal, p.nama, p.keterangan, "Rp " + p.pemasukan.toLocaleString('id-ID')]);
-            });
-
-            doc.autoTable({
-                head: [["No", "Tanggal", "Nama Pelanggan", "Rincian Item Belanja Selesai", "Omset Masuk"]],
-                body: barisTabelPesanan,
-                startY: posisiY_Sekarang + 4,
-                styles: { fontSize: 8.5 },
-                headStyles: { fillColor: [41, 128, 185] },
-                columnStyles: { 0: { halign: 'center', cellWidth: 10 }, 4: { halign: 'right' } }
-            });
-
-            posisiY_Sekarang = doc.lastAutoTable.finalY + 12;
-
-            // BAGIAN TERPISAH 2: DATA KAS MANUAL BER-NOMOR OBJEKTIF
-            doc.setFont("Helvetica", "bold");
-            doc.setFontSize(11);
-            doc.setTextColor(39, 174, 96);
-            doc.text("BAGIAN 2: DATA KAS PEMASUKAN & PENGELUARAN MANUAL", 14, posisiY_Sekarang);
-
-            const barisTabelManual = [];
-            listTransaksiManualGlobal.forEach((m, index) => {
-                barisTabelManual.push([
-                    (index + 1), m.tanggal, m.kategori, m.keterangan, 
-                    m.pemasukan > 0 ? "Rp " + m.pemasukan.toLocaleString('id-ID') : "-",
-                    m.pengeluaran > 0 ? "Rp " + m.pengeluaran.toLocaleString('id-ID') : "-"
-                ]);
-            });
-
-            doc.autoTable({
-                head: [["No", "Tanggal", "Kategori Kas", "Deskripsi Keterangan Dana", "Pemasukan", "Pengeluaran"]],
-                body: barisTabelManual,
-                startY: posisiY_Sekarang + 4,
-                styles: { fontSize: 8.5 },
-                headStyles: { fillColor: [39, 174, 96] },
-                columnStyles: { 0: { halign: 'center', cellWidth: 10 }, 4: { halign: 'right' }, 5: { halign: 'right' } }
-            });
-
-            doc.save(`Laporan_Keuangan_KiTa_Periode_${formatPeriodeRingkas.replace('/', '_')}.pdf`);
-        }
-
-        // ==========================================
-        // FITUR EKSPOR EXCEL MULTI-SHEET TERSTRUKTUR
-        // ==========================================
-        function exportKeExcel() {
-            const skrg = new Date();
-            const stringWaktuCetak = skrg.toLocaleDateString('id-ID') + " " + skrg.toLocaleTimeString('id-ID');
-            const wb = XLSX.utils.book_new();
-
-            // SHEET 1: RINGKASAN SALDO ACCURATE
-            const dataSaldo = [
-                ["LAPORAN RINGKASAN SALDO FINANSIAL - KITA PESANKEU"],
-                [`Waktu Unduh/Eksport: ${stringWaktuCetak}`],
-                [],
-                ["Parameter Keuangan", "Total Nilai Rupiah (Rp)"],
-                ["Total Pemasukan Bersih", totalPemasukanGlobal],
-                ["Total Pengeluaran Operasional", totalPengeluaranGlobal],
-                ["Saldo Akhir Buku Besar (Profit Kas)", totalPemasukanGlobal - totalPengeluaranGlobal]
-            ];
-            const wsSaldo = XLSX.utils.aoa_to_sheet(dataSaldo);
-            XLSX.utils.book_append_sheet(wb, wsSaldo, "Ringkasan Saldo");
-
-            // SHEET 2: DATA PESANAN CUST
-            const dataCust = [
-                ["Waktu Eksport Data: " + stringWaktuCetak],
-                [],
-                ["No", "Tanggal Order", "Nama Customer", "Deskripsi Item Belanja Selesai", "Omset Masuk (Rp)"]
-            ];
-            listPesananSelesaiGlobal.forEach((p, idx) => {
-                dataCust.push([(idx + 1), p.tanggal, p.nama, p.keterangan, p.pemasukan]);
-            });
-            const wsCust = XLSX.utils.aoa_to_sheet(dataCust);
-            XLSX.utils.book_append_sheet(wb, wsCust, "Data Pesanan Cust");
-
-            // SHEET 3: DATA TRANS MANUAL KAS
-            const dataManual = [
-                ["Waktu Eksport Data: " + stringWaktuCetak],
-                [],
-                ["No", "Tanggal Transaksi", "Kategori Buku", "Deskripsi Keterangan Dana", "Pemasukan (Rp)", "Pengeluaran (Rp)"]
-            ];
-            listTransaksiManualGlobal.forEach((m, idx) => {
-                dataManual.push([(idx + 1), m.tanggal, m.kategori, m.keterangan, m.pemasukan, m.pengeluaran]);
-            });
-            const wsManual = XLSX.utils.aoa_to_sheet(dataManual);
-            XLSX.utils.book_append_sheet(wb, wsManual, "Kas Masuk & Keluar Manual");
-
-            XLSX.writeFile(wb, `Pembukuan_MultiSheet_KiTa_${document.getElementById('filterBulan').value}.xlsx`);
-        }
-
-        function formatNoHp(no) {
-            let clean = no.replace(/[^0-9]/g, '');
-            if (clean.startsWith('0')) clean = '62' + clean.slice(1);
-            return clean;
-        }
-    </script>
-</body>
-</html>
