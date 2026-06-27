@@ -102,13 +102,20 @@ function renderOrdersTable() {
         `;
 
         const tr = document.createElement('tr');
+        const [tgl, jam] = (order.tanggal || "- -").split(" ");
+        // GANTI BAGIAN INI DI admin.js
         tr.innerHTML = `
-            <td style="text-align: center;"><strong>${String(index + 1).padStart(3, '0')}</strong></td>
-            <td><small>${order.tanggal || '-'}</small></td>
+            <td style="text-align: center;">${String(index + 1).padStart(3, '0')}</td>
+            <td>
+                <div class="date-container">
+                    <span class="d-block">${tgl}</span>
+                    <small class="d-block text-muted">${jam}</small>
+                </div>
+            </td>
             <td><strong>${order.nama || '-'}</strong></td>
             <td>${order.no_hp || '-'}</td>
-            <td>${order.alamat || '-'}</td>
-            <td style="vertical-align: top;">${rincianMenuHTML}</td>
+            <td>${order.alamat || '-'}</td> 
+            <td data-pdf-text="${pdfItemsText.trim()}"><ul class="table-item-list">${itemsLi}</ul></td>
             <td><small style="color:#b45309;">${order.catatan || '-'}</small></td>
             <td style="font-weight: bold; color: #16a34a;">Rp ${(Number(order.total_bayar) || 0).toLocaleString('id-ID')}</td>
             <td>
@@ -124,279 +131,32 @@ function renderOrdersTable() {
     });
 }
 
-// =========================================================================
-// 4. FUNGSI UTAMA B: RENDER JURNAL LAPORAN KEUANGAN & PEMBUKUAN (SELESAI)
-// =========================================================================
-function renderLaporanKeuangan() {
-    const filterBulan = document.getElementById('filterBulan') ? document.getElementById('filterBulan').value : 'all';
-    const filterTahun = document.getElementById('filterTahun') ? document.getElementById('filterTahun').value : '2026';
-    const financeTableBody = document.getElementById('financeTableBody');
-    const omsetHarianContainer = document.getElementById('omsetHarianContainer');
-    
-    if (!financeTableBody || !omsetHarianContainer) return; 
-
-    financeTableBody.innerHTML = "";
-    omsetHarianContainer.innerHTML = "";
-
-    totalPemasukanGlobal = 0;
-    totalPengeluaranGlobal = 0;
-    listPesananSelesaiGlobal = [];
-    listTransaksiManualGlobal = [];
-
-    let gabunganArusKas = [];
-    let chartLabels = [];
-    let chartDataPemasukan = new Array(31).fill(0);
-    let chartDataPengeluaran = new Array(31).fill(0);
-    let omsetMurniCustHarian = new Array(31).fill(0);
-
-    for(let i = 1; i <= 31; i++) chartLabels.push("Tgl " + i);
-
-    const tglSistem = new Date();
-    const tahunSistem = tglSistem.getFullYear().toString();
-    const batasBulanMaksimal = (filterTahun === tahunSistem) ? (tglSistem.getMonth() + 1) : 12;
-
-    // DATA AUTOMATIC (PESANAN CUSTOMER STATUS SELESAI)
-    Object.keys(localOrdersCache).forEach(key => {
-        const order = localOrdersCache[key];
-        
-        if (order.status === "selesai" && order.tanggal) {
-            const infoTgl = bersihkanDanPecahTanggal(order.tanggal);
-            
-            if (infoTgl) {
-                if (infoTgl.tahun === filterTahun && (filterBulan === 'all' || infoTgl.bulan === filterBulan)) {
-                    
-                    let targetMenu = order.menu_order || order.item_keranjang || [];
-                    if (targetMenu && typeof targetMenu === 'object' && !Array.isArray(targetMenu)) {
-                        targetMenu = Object.keys(targetMenu).map(k => targetMenu[k]);
-                    }
-
-                    let rincianMenuHTMLAdmin = `<div style="margin-bottom: 5px; font-weight: bold; color: #1e293b;">Pesanan Selesai an. ${order.nama}</div>`;
-                    let arrayRincianTeks = [];
-
-                    if (Array.isArray(targetMenu) && targetMenu.length > 0) {
-                        targetMenu.forEach(item => {
-                            let teksMenu = "";
-                            let teksKustom = "";
-
-                            if (typeof item === 'string') {
-                                teksMenu = item;
-                                teksKustom = "-";
-                            } else {
-                                teksMenu = item.menu || "";
-                                teksKustom = item.kustomisasi || item.topping || item.rasa || "-";
-                            }
-
-                            if (!teksMenu) return;
-
-                            const totalHargaItem = hitungOtomatisHargaTeksMentah(teksMenu, teksKustom);
-                            arrayRincianTeks.push(teksMenu);
-
-                            rincianMenuHTMLAdmin += `
-                                <div style="font-size: 11px; color: #475569; margin-left: 5px; border-left: 2px solid #cbd5e1; padding-left: 5px; margin-top: 4px;">
-                                    ➔ ${teksMenu}
-                                    <br>
-                                    <span style="color: #64748b;">Total Harga: </span><strong style="color: #0f766e;">Rp ${totalHargaItem.toLocaleString('id-ID')}</strong>
-                                </div>
-                            `;
-                        });
-                    }
-
-                    if (!arrayRincianTeks.length && typeof order.menu_order === 'string') {
-                        rincianMenuHTMLAdmin = `<div style="font-weight: bold; color: #1e293b;">Pesanan Selesai an. ${order.nama}</div><div style="font-size:11px; color:#475569;">${order.menu_order}</div>`;
-                    }
-
-                    let rincianMenuTeks = arrayRincianTeks.length > 0 ? arrayRincianTeks.join(", ") : "Menu tidak terinci";
-                    let nominalVal = Number(order.total_bayar) || 0;
-
-                    let itemData = {
-                        tanggal: order.tanggal,
-                        nama: order.nama,
-                        keterangan: `Pesanan Selesai an. ${order.nama} [${rincianMenuTeks}]`,
-                        pemasukan: nominalVal
-                    };
-                    
-                    gabunganArusKas.push({
-                        isManual: false, 
-                        key: key, 
-                        tanggal: order.tanggal,
-                        kategori: "Pesanan Cust", 
-                        keterangan: rincianMenuHTMLAdmin, 
-                        pemasukan: nominalVal, 
-                        pengeluaran: 0
-                    });
-
-                    listPesananSelesaiGlobal.push(itemData);
-                    totalPemasukanGlobal += nominalVal;
-                    
-                    if(infoTgl.hari >= 1 && infoTgl.hari <= 31) {
-                        chartDataPemasukan[infoTgl.hari - 1] += nominalVal;
-                        omsetMurniCustHarian[infoTgl.hari - 1] += nominalVal;
-                    }
-                }
-            }
-        }
-    });
-
-    // DATA MANUAL (PENGELUARAN & PEMASUKAN LAIN)
-    Object.keys(localFinanceCache).forEach(key => {
-        const f = localFinanceCache[key];
-        if (f.tanggal) {
-            const infoTgl = bersihkanDanPecahTanggal(f.tanggal);
-            if (infoTgl && infoTgl.tahun === filterTahun) {
-                let lolosFilter = false;
-                if (filterBulan === 'all') {
-                    if (parseInt(infoTgl.bulan, 10) <= batasBulanMaksimal) lolosFilter = true;
-                } else {
-                    if (infoTgl.bulan === filterBulan) lolosFilter = true;
-                }
-
-                if (lolosFilter) {
-                    let pem = 0; let peng = 0; let kat = "Pengeluaran";
-                    let nominalVal = Number(f.nominal) || 0;
-
-                    if (f.jenis === 'pemasukan_lain') {
-                        pem = nominalVal; kat = "Dana Masuk"; totalPemasukanGlobal += pem;
-                        if(infoTgl.hari >= 1 && infoTgl.hari <= 31) chartDataPemasukan[infoTgl.hari - 1] += nominalVal;
-                    } else {
-                        peng = nominalVal; totalPengeluaranGlobal += peng;
-                        if(infoTgl.hari >= 1 && infoTgl.hari <= 31) chartDataPengeluaran[infoTgl.hari - 1] += nominalVal;
-                    }
-
-                    gabunganArusKas.push({
-                        isManual: true, key: key, tanggal: f.tanggal,
-                        kategori: kat, keterangan: `<span style="font-weight:600; color:#1e293b;">${f.keterangan}</span>`, pemasukan: pem, pengeluaran: peng
-                    });
-
-                    listTransaksiManualGlobal.push({
-                        tanggal: f.tanggal, kategori: kat, keterangan: f.keterangan, pemasukan: pem, pengeluaran: peng
-                    });
-                }
-            }
-        }
-    });
-
-    // Sortir Arus Kas Tanggal Terbaru ke Terlama
-    gabunganArusKas.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
-
-    // Render Kalender Grid Visual Mini
-    if(filterBulan === 'all') {
-        omsetHarianContainer.innerHTML = `<p style="grid-column: 1/-1; text-align: center; font-size:13px; color: var(--text-muted); padding:10px;">Pilih satu bulan spesifik untuk melihat rincian pemetaan omset harian.</p>`;
-    } else {
-        omsetMurniCustHarian.forEach((nilaiOmset, indeks) => {
-            const tanggalHari = indeks + 1;
-            const box = document.createElement('div');
-            box.className = "omset-box";
-            if(nilaiOmset > 0) box.style.borderColor = "var(--purple)";
-            box.innerHTML = `
-                <div class="tgl-label">Tanggal ${tanggalHari}</div>
-                <div class="val-label" style="${nilaiOmset > 0 ? 'color: var(--purple); font-weight:800;' : 'color:#cbd5e1;'}">
-                    Rp ${nilaiOmset.toLocaleString('id-ID')}
-                </div>
-            `;
-            omsetHarianContainer.appendChild(box);
-        });
-    }
-
-    // Injeksi Baris Data ke Tabel HTML Jurnal Keuangan Utama
-    if (gabunganArusKas.length === 0) {
-        financeTableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">Tidak ada rekaman aktivitas keuangan pada periode ini.</td></tr>`;
-    } else {
-        gabunganArusKas.forEach(item => {
-            const tr = document.createElement('tr');
-            const badgeClass = item.pemasukan > 0 ? "badge-pemasukan" : "badge-pengeluaran";
-            
-            tr.innerHTML = `
-                <td style="white-space:nowrap; vertical-align: top;"><small>${item.tanggal}</small></td>
-                <td style="vertical-align: top;"><span class="badge ${badgeClass}">${item.kategori.toUpperCase()}</span></td>
-                <td style="vertical-align: top; text-align: left;">${item.keterangan}</td>
-                <td style="text-align:right; color:#16a34a; font-weight:600; vertical-align: top;">${item.pemasukan > 0 ? 'Rp ' + item.pemasukan.toLocaleString('id-ID') : '-'}</td>
-                <td style="text-align:right; color:#dc2626; font-weight:600; vertical-align: top;">${item.pengeluaran > 0 ? 'Rp ' + item.pengeluaran.toLocaleString('id-ID') : '-'}</td>
-                <td style="text-align:center; vertical-align: top;">
-                    ${item.isManual 
-                        ? `<button class="btn-action btn-delete" style="padding:4px 8px; display:inline-block; background:none; border:none; cursor:pointer;" onclick="hapusTransaksiManual('${item.key}')"><i class="fa-solid fa-trash" style="color:#dc2626;"></i></button>` 
-                        : `<span style="color:var(--text-muted); font-size:11px; font-style:italic;"><i class="fa-solid fa-robot"></i> Auto Terintegrasi</span>`}
-                </td>
-            `;
-            financeTableBody.appendChild(tr);
-        });
-    }
-
-    // Sinkronisasi Angka Akhir Ke Widget Card Atas
-    if (document.getElementById('reportTotalPemasukan')) {
-        document.getElementById('reportTotalPemasukan').innerText = "Rp " + totalPemasukanGlobal.toLocaleString('id-ID');
-    }
-    if (document.getElementById('reportTotalPengeluaran')) {
-        document.getElementById('reportTotalPengeluaran').innerText = "Rp " + totalPengeluaranGlobal.toLocaleString('id-ID');
-    }
-    
-    const saldoAkhir = totalPemasukanGlobal - totalPengeluaranGlobal;
-    const saldoEl = document.getElementById('reportSaldoAkhir');
-    if (saldoEl) {
-        saldoEl.innerText = "Rp " + saldoAkhir.toLocaleString('id-ID');
-        saldoEl.style.color = saldoAkhir >= 0 ? "var(--blue)" : "var(--danger)";
-    }
-
-    // Gambar Ulang Grafik Garis Chart.js
-    const canvasChart = document.getElementById('financeLineChart');
-    if (canvasChart) {
-        if (myLineChart) { myLineChart.destroy(); }
-        const ctx = canvasChart.getContext('2d');
-        myLineChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: chartLabels,
-                datasets: [
-                    {
-                        label: 'Pemasukan/Omset Total (Rp)',
-                        data: chartDataPemasukan,
-                        borderColor: '#2ecc71',
-                        backgroundColor: 'rgba(46, 204, 113, 0.1)',
-                        borderWidth: 2.5,
-                        tension: 0.2,
-                        fill: true
-                    },
-                    {
-                        label: 'Pengeluaran (Rp)',
-                        data: chartDataPengeluaran,
-                        borderColor: '#e74c3c',
-                        backgroundColor: 'rgba(231, 76, 60, 0.1)',
-                        borderWidth: 2.5,
-                        tension: 0.2,
-                        fill: true
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'top' } },
-                scales: {
-                    y: { beginAtZero: true, ticks: { callback: function(value) { return 'Rp ' + value.toLocaleString('id-ID'); } } }
-                }
-            }
-        });
-    }
-}
 
 document.addEventListener('DOMContentLoaded', function() {
     
     // FUNGSI UTAMA UNTUK MENGAMBIL DATA BERSIH (0 sampai 7)
+    // GANTI FUNGSI INI
     function getCleanTableData() {
         const originalTable = document.getElementById('tabelPesananUtama');
-        const newTable = document.createElement('table');
+        let data = [];
         
-        // Salin baris dan sel hanya sampai kolom ke-7 (Total Tagihan)
         for (let i = 0; i < originalTable.rows.length; i++) {
-            const newRow = newTable.insertRow();
-            for (let j = 0; j <= 7; j++) { 
-                const cell = originalTable.rows[i].cells[j];
-                if (cell) {
-                    const newCell = newRow.insertCell();
-                    newCell.innerHTML = cell.innerHTML;
+            let row = [];
+            for (let j = 0; j <= 7; j++) {
+                let cell = originalTable.rows[i].cells[j];
+                let text = cell ? cell.innerText.trim() : "";
+                
+                // Logika khusus untuk kolom Rincian Menu (indeks 5)
+                if (j === 5) {
+                    // Memasukkan spasi sebelum kata yang diawali huruf kapital (seperti "Banana" setelah "19.000")
+                    text = text.replace(/([0-9])([A-Z])/g, '$1\n$2');
                 }
+                
+                row.push(text);
             }
+            data.push(row);
         }
-        return newTable;
+        return data;
     }
 
     // EVENT LISTENER EXCEL
@@ -412,20 +172,78 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // EVENT LISTENER PDF
     const btnPDF = document.getElementById('btnExportPDF');
+    // EVENT LISTENER PDF
     if (btnPDF) {
         btnPDF.addEventListener('click', function(e) {
             e.preventDefault();
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('l', 'mm', 'a4');
+            
             doc.text("Laporan Data Antrean Pesanan", 14, 15);
             
-            // Menggunakan tabel bersih yang kita buat di fungsi
+            const rawData = getCleanTableData();
+            const headers = rawData[0]; // Baris pertama adalah header
+            const body = rawData.slice(1); // Sisanya adalah isi data
+
             doc.autoTable({ 
-                html: getCleanTableData(), 
+                head: [rawData[0]],
+                body: rawData.slice(1),
                 startY: 20,
-                theme: 'grid'
+                theme: 'grid',
+                styles: { fontSize: 8, overflow: 'linebreak' },
+                columnStyles: {
+                    0: { cellWidth: 10 },
+                    1: { cellWidth: 25 }, // Lebar kolom Tanggal
+                    2: { cellWidth: 25 }, // Lebar kolom Nama
+                    5: { cellWidth: 60 }  // Lebar kolom Rincian Menu
+                }
             });
             doc.save("Data_Antrean_Pesanan.pdf");
         });
     }
 });
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Menghubungkan tombol Export PDF
+    document.getElementById('btnExportPDF').addEventListener('click', function() {
+        // Panggil fungsi PDF yang sudah kita buat sebelumnya
+        exportPDF(); 
+    });
+
+    // Menghubungkan tombol Export Excel
+    document.getElementById('btnExportExcel').addEventListener('click', function() {
+        // Panggil fungsi Excel Anda
+        exportExcel(); 
+    });
+});
+
+function formatDeskripsiArusKas(rawText) {
+    if (!rawText || !rawText.includes("Pesanan Selesai")) return rawText;
+
+    // 1. Coba ambil teks di dalam kurung siku
+    const match = rawText.match(/\[(.*?)\]/);
+    
+    // Jika tidak ada kurung siku, kita pecah berdasarkan koma (asumsi item dipisah koma)
+    let items = [];
+    let header = rawText;
+    
+    if (match) {
+        header = rawText.split(' [')[0];
+        items = match[1].split(/\], ?/); // Pemisah item
+    } else {
+        // Fallback: Jika tidak ada kurung siku, coba pecah berdasarkan koma
+        items = rawText.replace("Pesanan Selesai an. ", "").split(', ');
+    }
+
+    // 2. Bangun HTML
+    let html = `<strong>${header}</strong><ul style="margin: 5px 0 0 0; padding-left: 20px;">`;
+    items.forEach(item => {
+        let clean = item.replace(/\[@Rp \d+[\d.]* -> Rp \d+[\d.]*\]/g, '').replace(']', '').trim();
+        if (clean) {
+            html += `<li style="margin-bottom: 2px;">${clean}</li>`;
+        }
+    });
+    html += '</ul>';
+    
+    return html;
+}
