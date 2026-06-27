@@ -73,12 +73,127 @@
         .admin-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); margin-bottom: 25px; }
         .card-title-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
         
+        #tabelPesananUtama th:nth-child(5), /* Contoh kolom Rincian Menu */
+        #tabelPesananUtama td:nth-child(5) {
+            max-width: 150px; /* Batasi lebar maksimal */
+            overflow: hidden;
+            text-overflow: ellipsis; /* Menampilkan titik-titik jika teks terlalu panjang */
+        }
+
+        /* Khusus kolom rincian menu agar teksnya lebih ringkas */
+        #tabelPesananUtama td:nth-child(5) {
+            font-size: 11px;
+            line-height: 1.2;
+        }
+
+        /* Mengatur agar tabel lebih padat */
+        #tabelPesananUtama {
+            font-size: 12px; /* Memperkecil ukuran font keseluruhan */
+            border-collapse: collapse; /* Menghilangkan celah antar border */
+            width: 100%;     /* Memastikan tabel mengisi lebar container */
+            table-layout: auto; /* Membiarkan browser menyesuaikan lebar kolom */
+        }
+
+        /* Mengurangi padding sel agar baris lebih tipis */
+        #tabelPesananUtama th, 
+        #tabelPesananUtama td {
+            padding: 8px 10px;
+            vertical-align: middle;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+
+        /* Mengatur header agar lebih menonjol namun tetap rapi */
+        #tabelPesananUtama th {
+            background-color: #f9fafb;
+            font-weight: 600;
+            text-align: left;
+        } 
+            
+        /* Membuat teks pada rincian menu lebih ringkas */
+        #tabelPesananUtama td:nth-child(5) { /* Sesuaikan indeks kolom Rincian Menu */
+            font-size: 10px;
+            line-height: 1.1;
+            white-space: normal; /* Memungkinkan teks membungkus (wrap) ke bawah */
+        }
+
+        td ul {
+            font-size: 11px !important; /* Perkecil sedikit agar proporsional */
+            line-height: 1.3 !important;
+        }
+
+        .button-container {
+            display: flex;          /* Mengaktifkan flexbox */
+            gap: 20px;              /* Mengatur jarak (gap) yang sama antar tombol */
+            align-items: center;    /* Menjaga tombol agar sejajar secara vertikal */
+            margin-bottom: 20px;    /* Memberi jarak antara tombol dan tabel */
+        }
+
+        .btn {
+            padding: 10px 20px;     /* Ukuran tombol agar konsisten */
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
         /* Tombol Aksi Dokumentasi (PDF & Excel) */
-        .btn-export { border: none; padding: 8px 16px; font-size: 13px; font-weight: 600; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px; color: white; transition: 0.2s; }
-        .btn-excel { background-color: #1f7246; }
-        .btn-excel:hover { background-color: #1a5e3a; }
-        .btn-pdf { background-color: #b30000; }
-        .btn-pdf:hover { background-color: #930000; }
+        /* Styling umum untuk tombol */
+        .btn-export {
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            border: none;
+            border-radius: 6px; /* Ujung tumpul/melengkung */
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+            margin-right: 10px;
+        }
+       
+        .btn-custom {
+                padding: 10px 20px;
+                border: none;
+                cursor: pointer;
+                font-weight: 600;
+                color: white;
+                transition: all 0.3s ease;
+                /* INI YANG MEMBUAT MELENGKUNG */
+                border-radius: 8px; 
+                font-size: 14px;
+                margin-right: 10px;
+            }
+
+            /* Warna Excel */
+            .btn-excel {
+                background-color: #10b981;
+            }
+
+            /* Warna PDF */
+            .btn-pdf {
+                background-color: #ef4444;
+            }
+
+            /* Efek saat kursor di atas tombol */
+            .btn-custom:hover {
+                filter: brightness(90%);
+                transform: translateY(-1px);
+            }        
+
+        /* Tombol Excel (Warna Hijau Senada) */
+        .btn-excel {
+            background-color: #28a745; /* Sesuaikan dengan hijau web Anda */
+        }
+        .btn-excel:hover {
+            background-color: #218838;
+        }
+
+        /* Tombol PDF (Warna Merah/Oranye Senada) */
+        .btn-pdf {
+            background-color: #dc3545; /* Sesuaikan dengan warna merah web Anda */
+        }
+        .btn-pdf:hover {
+            background-color: #c82333;
+        }
 
         /* TABEL PESANAN TERPERINCI */
         .table-responsive { 
@@ -254,7 +369,28 @@
         .btn-wa      { background-color: var(--btn-wa); color: white; }
         .btn-delete  { background-color: var(--btn-hapus); color: white; }
 
-        .btn-action:hover { opacity: 0.8; }        
+        .btn-action:hover { opacity: 0.8; }   
+        
+        /* Pastikan kolom deskripsi pada tabel Jurnal Arus Kas memiliki aturan ini */
+        .table-arus-kas .kolom-keterangan {
+            white-space: pre-wrap;    /* Memaksa teks pindah baris jika sudah mencapai batas kolom */
+            word-wrap: break-word;    /* Memecah kata yang terlalu panjang agar tidak merusak layout */
+            max-width: 300px;         /* Batasi lebar agar tabel tetap konsisten */
+            font-size: 13px;
+            line-height: 1.5;         /* Jarak antar baris agar nyaman dibaca */
+        }
+
+        /* Pastikan sel tabel mendukung layout list */
+        td {
+            vertical-align: top;
+        }
+
+        /* Mengatur agar daftar menu tidak terlalu lebar */
+        td ul {
+            list-style-type: disc;
+            font-size: 12px;
+            line-height: 1.3;
+        }
 
         /* Biarkan kolom yang penting lebih lebar, kolom yang kecil tetap ringkas */
         .admin-table td:nth-child(1) { width: 40px; }   /* No */
@@ -390,8 +526,8 @@
                 </div>
 
                 <div class="export-buttons" style="margin-bottom: 20px;">
-                    <button id="btnExportExcel" style="background: #10b981; color: white; padding: 10px; border: none; cursor: pointer;">Export Excel</button>
-                    <button id="btnExportPDF" style="background: #ef4444; color: white; padding: 10px; border: none; cursor: pointer;">Export PDF</button>
+                    <button id="btnExportExcel" class="btn-custom btn-excel">Export Excel</button>
+                    <button id="btnExportPDF" class="btn-custom btn-pdf">Export PDF</button>
                 </div>                
 
                 <div class="table-responsive">
@@ -1054,39 +1190,52 @@ function renderLaporanKeuangan() {
                     
                     const targetMenu = order.menu_order || order.item_keranjang || [];
                     
-                    // 🌟 1. PEMBUATAN TEKS RINCIAN UNTUK DATA KAS / ARSIP PDF
+                    // 🌟 1. PEMBUATAN TEKS RINCIAN (DIUBAH AGAR LEBIH RAPI)
                     let arrayRincianTeks = [];
                     targetMenu.forEach(item => {
-                        // INI BAGIAN UTAMANYA:
                         const hargaSatuan = Number(item.harga) || 0;
                         const qty = Number(item.qty) || 1;
                         const subtotalMenu = item.subtotal ? Number(item.subtotal) : (hargaSatuan * qty);
                         
-                        // Baris di bawah ini yang menentukan format tulisan di kolom keterangan
-                        arrayRincianTeks.push(`${item.menu} (${qty}x) [@Rp ${hargaSatuan.toLocaleString('id-ID')} -> Rp ${subtotalMenu.toLocaleString('id-ID')}]`);
+                        // Simpan hanya informasi penting dalam format yang bersih
+                        arrayRincianTeks.push(`${item.menu} (${qty}x) - Rp ${subtotalMenu.toLocaleString('id-ID')}`);
                     });
 
-                    let rincianMenuTeks = arrayRincianTeks.length > 0 ? arrayRincianTeks.join(", ") : "Menu tidak terinci";
+                    // Gunakan karakter baru (\n) agar saat dirender di tabel bisa jadi baris baru
+                    let rincianMenuTeks = arrayRincianTeks.length > 0 ? arrayRincianTeks.join("\n") : "Menu tidak terinci";
                     let nominalVal = Number(order.total_bayar) || 0;
 
-                    // Format objek data khusus arsip eksportir Pesanan Cust (PDF)
-                    let itemData = {
-                        tanggal: order.tanggal,
-                        nama: order.nama,
-                        keterangan: `Pesanan Selesai an. ${order.nama} [${rincianMenuTeks}]`,
-                        pemasukan: nominalVal
-                    };
-                    
-                    // Masukkan ke array gabungan pembukuan tabel utama (Untuk di-render di tabel)
+                    // 1. BUAT STRING HANYA BERISI DAFTAR MENU (Untuk PDF/Excel)
+                    let rincianMenuBersih = arrayRincianTeks.join("\n");
+
+                    // 2. BUAT HTML RINCIAN (Untuk Tampilan Tabel Web)
+                    // Kita hilangkan "Pesanan an. ${order.nama}" karena nama sudah ada di kolom/data lain
+                    let rincianHTML = `<ul style="margin: 0; padding-left: 18px; list-style-type: disc;">`;
+                    arrayRincianTeks.forEach(teks => {
+                        rincianHTML += `<li style="font-size: 12px; margin-bottom: 2px;">${teks}</li>`;
+                    });
+                    rincianHTML += `</ul>`;
+
+                    // 3. MASUKKAN KE GABUNGAN ARUS KAS (Untuk Tabel Web)
                     gabunganArusKas.push({
                         isManual: false, 
                         key: key, 
                         tanggal: order.tanggal,
                         kategori: "Pesanan Cust", 
-                        keterangan: itemData.keterangan,
+                        keterangan: rincianHTML, // Hanya berisi list menu
                         pemasukan: nominalVal, 
                         pengeluaran: 0
                     });
+
+                    // 4. FORMAT OBJEK DATA (Untuk PDF/Excel)
+                    let tanggalBersih = order.tanggal.split(' ')[0].replace(',', '');
+                    let itemData = {
+                        tanggal: tanggalBersih, // Menggunakan tanggal yang sudah bersih
+                        nama: order.nama,
+                        keterangan: rincianMenuBersih, // Bersih, tanpa nama pelanggan
+                        pemasukan: nominalVal
+                    };
+
 
                     listPesananSelesaiGlobal.push(itemData);
                     totalPemasukanGlobal += nominalVal;
@@ -1180,9 +1329,7 @@ function renderLaporanKeuangan() {
         });
     }
 
-    // =========================================================================
     // D. Injeksi Elemen Baris Data ke Tabel HTML Jurnal Keuangan Utama
-    // =========================================================================
     if (gabunganArusKas.length === 0) {
         financeTableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">Tidak ada rekaman aktivitas keuangan pada periode ini.</td></tr>`;
     } else {
@@ -1190,13 +1337,16 @@ function renderLaporanKeuangan() {
             const tr = document.createElement('tr');
             const badgeClass = item.pemasukan > 0 ? "badge-pemasukan" : "badge-pengeluaran";
             
+            // --- PERBAIKAN: Potong jam dengan split(' ')[0] ---
+            const tanggalSaja = item.tanggal.split(' ')[0].replace(',', '');
+
             tr.innerHTML = `
-                <td style="white-space:nowrap;"><small>${item.tanggal}</small></td>
-                <td><span class="badge ${badgeClass}">${item.kategori}</span></td>
-                <td><strong>${item.keterangan}</strong></td>
-                <td style="text-align:right; color:#16a34a; font-weight:600;">${item.pemasukan > 0 ? 'Rp ' + item.pemasukan.toLocaleString('id-ID') : '-'}</td>
-                <td style="text-align:right; color:#dc2626; font-weight:600;">${item.pengeluaran > 0 ? 'Rp ' + item.pengeluaran.toLocaleString('id-ID') : '-'}</td>
-                <td style="text-align:center;">
+                <td style="white-space:nowrap; vertical-align: top;"><small>${tanggalSaja}</small></td>
+                <td style="vertical-align: top;"><span class="badge ${badgeClass}">${item.kategori}</span></td>
+                <td style="vertical-align: top; text-align: left;">${item.keterangan}</td>
+                <td style="text-align:right; color:#16a34a; font-weight:600; vertical-align: top;">${item.pemasukan > 0 ? 'Rp ' + item.pemasukan.toLocaleString('id-ID') : '-'}</td>
+                <td style="text-align:right; color:#dc2626; font-weight:600; vertical-align: top;">${item.pengeluaran > 0 ? 'Rp ' + item.pengeluaran.toLocaleString('id-ID') : '-'}</td>
+                <td style="text-align:center; vertical-align: top;">
                     ${item.isManual 
                         ? `<button class="btn-action btn-delete" style="padding:4px 8px; display:inline-block; background:none; border:none; cursor:pointer;" onclick="hapusTransaksiManual('${item.key}')"><i class="fa-solid fa-trash" style="color:#dc2626;"></i></button>` 
                         : `<span style="color:var(--text-muted); font-size:11px; font-style:italic;"><i class="fa-solid fa-robot"></i> Auto Terintegrasi</span>`}
@@ -1456,31 +1606,38 @@ function renderLaporanKeuangan() {
         window.addEventListener('load', function() {
             console.log("Skrip Ekspor Aktif - Filter Kolom Diaktifkan");
 
-        function getCleanTable() {
-            const originalTable = document.getElementById('tabelPesananUtama');
-            const cleanTable = originalTable.cloneNode(true);
-            const menuColumnIndex = 5; // Pastikan index ini benar sesuai tabel Anda
+            function getCleanTable() {
+                const originalTable = document.getElementById('tabelPesananUtama');
+                const cleanTable = originalTable.cloneNode(true);
+                const dateColumnIndex = 1;
+                const menuColumnIndex = 5;
 
-            for (let i = 0; i < cleanTable.rows.length; i++) {
-                let cell = cleanTable.rows[i].cells[menuColumnIndex];
-                if (cell) {
-                    // 1. Ambil teks murni dari elemen tersebut
-                    // Ini akan membuang tag <ul>, <li>, dan <strong>
-                    let menuText = cell.innerText.replace(/•/g, '|');    
-                    let text = cell.innerText; 
-                    
-                    // 2. Ganti spasi/karakter yang tidak diinginkan agar lebih rapi
-                    // Jika teksnya masih menyatu, kita akan memberi tanda baris baru
-                    // Anda bisa menyesuaikan replace ini berdasarkan output yang Anda inginkan
-                    cell.innerHTML = text; 
+                for (let i = 0; i < cleanTable.rows.length; i++) {
+                     // --- PROSES TANGGAL & JAM ---
+                    let dateCell = cleanTable.rows[i].cells[dateColumnIndex];
+                    if (dateCell) {
+                        let text = dateCell.innerText.trim();
+                        // Contoh format: "24-06-2026, 02.28.10"
+                        // Kita ganti koma spasi ", " menjadi "\n" agar jam pindah ke bawah
+                        let dateOnly = text.split(',')[0].trim();
+                        dateCell.innerText = dateOnly;
+                    }  
+                    let headerCell = cleanTable.rows[0].cells[1]; // Index 1 adalah kolom Tanggal
+                    if (headerCell) {
+                        headerCell.innerText = "Tanggal";
+                    }                  
+                    let cell = cleanTable.rows[i].cells[menuColumnIndex];
+                    if (cell) {
+                        // Ganti tag <li> atau bullet dengan '|'
+                        // Kita hapus dulu semua tag HTML agar teks murni
+                        let cleanText = cell.innerHTML.replace(/<li>/g, '|').replace(/<\/li>/g, '').replace(/<[^>]*>/g, '');
+                        cell.innerText = cleanText; 
+                    }
+                    if (cleanTable.rows[i].cells.length > 9) cleanTable.rows[i].deleteCell(9);
+                    if (cleanTable.rows[i].cells.length > 8) cleanTable.rows[i].deleteCell(8);
                 }
-                
-                // Hapus kolom Aksi (9) dan Status (8)
-                if (cleanTable.rows[i].cells.length > 9) cleanTable.rows[i].deleteCell(9);
-                if (cleanTable.rows[i].cells.length > 8) cleanTable.rows[i].deleteCell(8);
+                return cleanTable;
             }
-            return cleanTable;
-        }
 
             // EXPORT EXCEL
             document.getElementById('btnExportExcel').onclick = function() {
@@ -1505,16 +1662,29 @@ function renderLaporanKeuangan() {
                     cellPadding: 3
                 },
                 columnStyles: {
-                    5: { cellWidth: 60 } 
+                    1: { cellWidth: 30 }, // Tambahkan lebar agar cukup untuk 2 baris
+                    5: { 
+                        cellWidth: 70,
+                        minCellHeight: 10 // Beri tinggi minimal agar baris tidak menumpuk
+                    } 
                 },
-                // TAMBAHKAN BAGIAN INI:
+                
+                // Gunakan didParseCell untuk memanipulasi teks
                 didParseCell: function(data) {
-                    // Ganti angka 5 dengan index kolom Rincian Menu Anda
-                    if (data.column.index === 5 && data.cell.text) {
-                        // Mengubah string yang dipisah oleh '|' (atau bullet) menjadi baris baru
-                        let content = data.cell.text.join('');
-                        // Jika Anda menggunakan tanda '•' di web, ganti '|' di bawah dengan '•'
-                        data.cell.text = content.split('|').filter(item => item.trim() !== "");
+                // Menangani kolom Tanggal (index 1) agar newline aktif
+                    if (data.column.index === 1 && data.cell.raw) {
+                        let text = data.cell.raw.innerText;
+                        data.cell.text = data.cell.text[0].split('\n');
+                    }                    
+                    if (data.column.index === 5) {
+                        // Ambil data mentah langsung dari tabel (bukan dari .text)
+                        let rawContent = data.cell.raw.innerText; 
+                        
+                        // Pecah dengan pemisah '|' yang sudah dibuat di getCleanTable
+                        let items = rawContent.split('|').filter(item => item.trim() !== "");
+                        
+                        // Masukkan sebagai Array, AutoTable WAJIB menerima array untuk baris baru
+                        data.cell.text = items.map(item => "• " + item.trim());
                     }
                 }
             });
