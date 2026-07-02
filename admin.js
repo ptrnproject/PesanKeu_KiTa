@@ -247,3 +247,28 @@ function formatDeskripsiArusKas(rawText) {
     
     return html;
 }
+
+function startScanner() {
+    const scannerDiv = document.getElementById('reader');
+    if (!scannerDiv) {
+        alert("Elemen dengan ID 'reader' tidak ditemukan di HTML!");
+        return;
+    }
+    
+    scannerDiv.style.display = 'block';
+
+    const html5QrCode = new Html5Qrcode("reader");
+    html5QrCode.start(
+        { facingMode: "environment" }, 
+        { fps: 10, qrbox: 250 },
+        (decodedText, decodedResult) => {
+            document.getElementById('inputKeterangan').value = decodedText;
+            html5QrCode.stop().then(ignore => {
+                scannerDiv.style.display = 'none';
+            });
+        },
+        (errorMessage) => { /* Abaikan error scanning */ }
+    ).catch(err => {
+        alert("Gagal mengakses kamera: " + err);
+    });
+}
