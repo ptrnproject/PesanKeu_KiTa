@@ -721,6 +721,9 @@
             <div class="form-group">
                 <label>Keterangan / Deskripsi Penggunaan Dana</label>
                 <input type="text" id="finKeterangan" placeholder="Misal: Pembelian bahan baku habis">
+                <!-- Tambahkan tombol scanner dan area kamera -->
+                <button type="button" id="btnScan" onclick="startScanner()">Scan Barcode Barang</button>
+                <div id="reader" style="width: 300px; display: none;"></div>
             </div>
             <div class="form-group">
                 <label>Nominal Dana (Rp)</label>
