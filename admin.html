@@ -15,6 +15,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
 
     <style>
         /* TEMA TERANG PROFESIONAL (LIGHT MODE) */
@@ -566,7 +567,7 @@
                         <div class="filter-group">
                             <label><i class="fa-solid fa-calendar-days"></i> Bulan:</label>
                             <select id="filterBulan" onchange="renderLaporanKeuangan()">
-                                <option value="all">-- Semua Bulan --</option>
+                                <option value="all">Januari - Desember</option>
                                 <option value="01">Januari</option>
                                 <option value="02">Februari</option>
                                 <option value="03">Maret</option>
@@ -877,10 +878,16 @@ database.ref('pesanan').on('value', (snapshot) => {
     // 2. Urutkan berdasarkan tanggal (pesanan lama ke atas)
     // Asumsi: format 'order.tanggal' bisa di-sort (contoh: DD-MM-YYYY HH:mm:ss)
     // Jika tanggal tidak bisa di-sort, tambahkan 'timestamp' di database saat pesan
-    orderList.sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
+    orderList.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+
+    orderList.reverse();
+
+    // 2. Simpan jumlah total data agar nomor urut bisa dihitung mundur
+    const totalOrder = orderList.length;
 
     // 3. Render ke tabel
     orderList.forEach((order, index) => {
+        const nomorUrut = totalOrder - index;
         const key = order.key; 
         let itemsLi = "";
         let waItemsText = ""; // Untuk Chat WA
@@ -888,17 +895,25 @@ database.ref('pesanan').on('value', (snapshot) => {
 
         const daftarMenu = order.menu_order || order.item_keranjang;
         if (daftarMenu && Array.isArray(daftarMenu)) {
+            // --- UBAH BAGIAN INI ---
             daftarMenu.forEach(item => {
                 const sub = (Number(item.harga) || 0) * (Number(item.qty) || 1);
-                itemsLi += `<li><strong>${item.menu}</strong> (${item.qty}x) - Rp ${sub.toLocaleString('id-ID')}</li>`;
-                waItemsText += `- ${item.menu} (${item.qty}x) - Rp ${sub.toLocaleString('id-ID')}\n`;
                 
-                // Tambahkan ini untuk PDF
-                pdfItemsText += `${item.menu} (${item.qty}x) - Rp ${sub.toLocaleString('id-ID')}\n`;
+                // 1. TAMBAHKAN LOGIKA INI: Mengambil data level, rasa, topping
+                const detailKustom = item.kustomisasi ? `<div style="font-size: 11px; color: #64748b; font-style: italic;">(${item.kustomisasi})</div>` : "";
+                const textKustom = item.kustomisasi ? ` (${item.kustomisasi})` : "";
+
+                // 2. TAMPILKAN DI TABEL (itemsLi): Ditambahkan detailKustom
+                itemsLi += `
+                    <li style="margin-bottom: 5px;">
+                        <strong>${item.menu}</strong> (${item.qty}x) - Rp ${sub.toLocaleString('id-ID')}
+                        ${detailKustom}
+                    </li>`;
+                
+                // 3. TAMPILKAN DI WA & PDF: Tetap bersih tanpa detail (sesuai permintaan Anda sebelumnya)
+                waItemsText += `- ${item.menu} (${item.qty}x)${textKustom} - Rp ${sub.toLocaleString('id-ID')}\n`;
+                pdfItemsText += `${item.menu} (${item.qty}x)${textKustom} - Rp ${sub.toLocaleString('id-ID')}\n`;
             });
-        } else {
-            itemsLi = "<li>-</li>";
-            pdfItemsText = "-";
         }
 
         const statusClass = order.status === "selesai" ? "badge-selesai" : (order.status === "diproses" ? "badge-diproses" : "badge-pending");
@@ -913,7 +928,7 @@ database.ref('pesanan').on('value', (snapshot) => {
     const tr = document.createElement('tr');
     const [tgl, jam] = (order.tanggal || " - ").split(" ");
     tr.innerHTML = `
-        <td style="text-align: center;">${String(index + 1).padStart(3, '0')}</td>
+        <td style="text-align: center;">${String(nomorUrut).padStart(3, '0')}</td>
         <td>
             <div class="date-container">
                 <span class="d-block">${tgl}</span>
@@ -1608,9 +1623,25 @@ function renderLaporanKeuangan() {
 
             function getCleanTable() {
                 const originalTable = document.getElementById('tabelPesananUtama');
-                const cleanTable = originalTable.cloneNode(true);
+                // 1. Ambil body tabel saja, jangan headernya
+                const tbody = originalTable.querySelector('tbody');
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+                
+                // 2. BALIK URUTAN: Data terlama jadi index 0
+                const sortedRows = rows.reverse();
+
+                // 3. Buat tabel baru yang bersih
+                const cleanTable = document.createElement('table');
+                cleanTable.appendChild(originalTable.tHead.cloneNode(true)); // Copy header
+                const newTbody = document.createElement('tbody');
+
+                // 4. Masukkan baris yang sudah dibalik
+                sortedRows.forEach(row => newTbody.appendChild(row.cloneNode(true)));
+                cleanTable.appendChild(newTbody);
+
                 const dateColumnIndex = 1;
                 const menuColumnIndex = 5;
+
 
                 for (let i = 0; i < cleanTable.rows.length; i++) {
                      // --- PROSES TANGGAL & JAM ---
@@ -1627,11 +1658,27 @@ function renderLaporanKeuangan() {
                         headerCell.innerText = "Tanggal";
                     }                  
                     let cell = cleanTable.rows[i].cells[menuColumnIndex];
-                    if (cell) {
-                        // Ganti tag <li> atau bullet dengan '|'
-                        // Kita hapus dulu semua tag HTML agar teks murni
-                        let cleanText = cell.innerHTML.replace(/<li>/g, '|').replace(/<\/li>/g, '').replace(/<[^>]*>/g, '');
-                        cell.innerText = cleanText; 
+                    if (cell && i > 0) { // i > 0 untuk melewati header
+                        // 1. Ambil teks asli
+                        let rawText = cell.innerText;
+                        
+                        // 2. Jika Anda ingin HANYA "Nama Menu (Qty)", kita bisa memecah stringnya
+                        // Asumsi format: "Lumpia Beef (1x) - Rp 19.000 (Rasa: Sedang + Extra Telor)"
+                        // Kita ambil bagian sebelum tanda "-" pertama atau sebelum karakter "(" kedua
+                        
+                        let items = cell.querySelectorAll('li');
+                        let cleanMenuArray = [];
+                        
+                        items.forEach(li => {
+                            let text = li.innerText; // "Lumpia Beef (1x) - Rp 19.000 (Rasa...)"
+                            
+                            // Ambil hanya teks sampai sebelum tanda "-" (karena harga ada setelah -)
+                            // Atau ambil hanya sampai bagian "(1x)"
+                            let cleanItem = text.split('-')[0].trim(); 
+                            cleanMenuArray.push(cleanItem);
+                        });
+                        
+                        cell.innerText = cleanMenuArray.join('|');
                     }
                     if (cleanTable.rows[i].cells.length > 9) cleanTable.rows[i].deleteCell(9);
                     if (cleanTable.rows[i].cells.length > 8) cleanTable.rows[i].deleteCell(8);
