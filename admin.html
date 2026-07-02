@@ -15,7 +15,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://unpkg.com/html5-qrcode"></script>
 
     <style>
         /* TEMA TERANG PROFESIONAL (LIGHT MODE) */
@@ -1742,5 +1741,36 @@ function renderLaporanKeuangan() {
             };
         });
     </script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <!-- Pastikan library scanner ada di sini -->
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<!-- Inline script agar pasti terbaca -->
+<script>
+    function startScanner() {
+        console.log("Fungsi startScanner berhasil dipanggil!");
+        const scannerDiv = document.getElementById('reader');
+        
+        if (!scannerDiv) {
+            alert("Error: Elemen <div id='reader'> tidak ditemukan di form Anda!");
+            return;
+        }
+
+        scannerDiv.style.display = 'block';
+
+        const html5QrCode = new Html5Qrcode("reader");
+        html5QrCode.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: 250 },
+            (decodedText) => {
+                document.getElementById('inputKeterangan').value = decodedText;
+                html5QrCode.stop().then(() => {
+                    scannerDiv.style.display = 'none';
+                });
+            },
+            (err) => { console.log(err); }
+        ).catch(err => alert("Gagal akses kamera: " + err));
+    }
+</script>
 </body>
 </html>
